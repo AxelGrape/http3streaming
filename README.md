@@ -1,13 +1,13 @@
 # http3streaming
 DVAE08 - Group 1 
 
-# Team Leader
+## Team Leader
 Axel Pettersson
 
-# Meeting secretary
+## Meeting secretary
 Benjamin Salmonsson
 
-# Members
+## Members
 Joel Wikström 
 Siri Nordquist 
 Simon Tham 
