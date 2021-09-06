@@ -10,8 +10,8 @@ Axel Pettersson - axel.pettersson.itg@gmail.com
 Benjamin Salmonsson - benjamin.salo@gmail.com
 
 ## Members
-Joel Wikström 
-Siri Nordquist 
-Simon Tham 
+Joel Wikström <br>
+Siri Nordquist <br>
+Simon Tham <br>
 
 
