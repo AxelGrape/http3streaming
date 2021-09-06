@@ -8,8 +8,8 @@ Axel Pettersson
 Benjamin Salmonsson
 
 # Members
-Joel Wikström
-Siri Nordquist
-Simon Tham
+Joel Wikström 
+Siri Nordquist 
+Simon Tham 
 
 
