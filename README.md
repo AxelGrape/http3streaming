@@ -16,13 +16,13 @@ DVAE08 - Group 1
 
 # Group
 
-## Team Leader
+### Team Leader
 Axel Pettersson - axel.pettersson.itg@gmail.com
 
-## Meeting secretary 
+### Meeting secretary 
 Benjamin Salmonsson - benjamin.salo@gmail.com
 
-## Members
+### Members
 Joel Wikström <br>
 Siri Nordquist <br>
 Simon Tham <br>
