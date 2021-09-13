@@ -1,0 +1,13 @@
+Meeting with product owner (Habte)
+decided to have weekly meetings with Product owner
+decided to implement a stored http3 videostreaming service based on mpegdash with proxygen library
+We have to make our own backlog
+Research about how to start a server and client communication
+OK to work with local server
+Make concrete goals and decisions
+Distributed tasks to work with:
+Benjamin and Simon on client
+Joel, siri and axel on server
+
+Until next meeting:
+Document which desicions we have made, concrete goals, distributed tasks.
