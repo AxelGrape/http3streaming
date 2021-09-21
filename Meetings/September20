@@ -7,7 +7,7 @@ write what you have learned for each sprint, including the time spent on it,
 problems that we have faced, if a problem occurs ask directly to ovais.
 
 frågor till habte:
-Ska man kunna pausa streamingen?
-Vad innebär att streamingtjänsten är funktionell? 
+Ska man kunna pausa streamingen? --> jupp, verkade som de.
+Vad innebär att streamingtjänsten är funktionell? --> att koden funkar
 Vad menas med queue in buffer? how well to coupe with interruptsions, frame buffer. how many frames are stored before playing.
-vem vill veta vad? ovais och habte?
+vem vill veta vad? ovais och habte? --> ovais vill ha pp-presentation, inte nödvändigtvis habte
