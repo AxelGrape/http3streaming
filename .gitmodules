@@ -1,0 +1,3 @@
+[submodule "Projects/proxygen"]
+	path = Projects/proxygen
+	url = https://github.com/facebook/proxygen.git
