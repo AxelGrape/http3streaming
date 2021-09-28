@@ -1,2 +1,4 @@
 can we use an existing videoplayer if it is ontop of mvfast? or do we have to implement the vidoeplayer our selfs?
-can he fix a server for us?
+can he fix a server for us? maybe
+
+if we do the client and server from scratch we might not have to do the live streaming part, it depends on how easy it is to implement the videoplayer into the project.
