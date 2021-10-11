@@ -12,6 +12,7 @@ DVAE08 - Group 1
 [Jira](https://http3streaming.atlassian.net/jira/software/projects/G1/boards/1/roadmap?assignee=5e2ee440bd1e480ca3282882)<br>
 [Log](https://docs.google.com/spreadsheets/d/1Z6yoetRuhENfDtsLJRbWcmkTuLEjliVSZitTgQ5ZBZA/edit#gid=866319820)<br>
 [Overleaf](https://www.overleaf.com/7558532899hbzgzdvmvnmp)<br>
+[Drive](https://drive.google.com/drive/folders/1J768UfVP07vTIhhRLKgHFV4A89GECaM1?usp=sharing)<br>
 
 
 ### Resources
