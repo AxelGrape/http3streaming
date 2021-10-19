@@ -32,4 +32,7 @@ Joel Wikström <br>
 Siri Nordquist <br>
 Simon Tham <br>
 
+./team --mode=server -static_root=/home/http3team/ --port=8080 --h2port=8080 --protocol=h3-27
+
+
 
