@@ -22,6 +22,9 @@ Number of Segments = mediaPresentationDuration ÷ Segment Duration
 
 """
 
+def parse_mpd(file):
+    return MPEGDASHParser.parse(file)
+
 
 # Extract the file names of a representation
 def get_media_files(ss, temp_file):
@@ -129,6 +132,6 @@ def print_data(mpd):
 
 
 if __name__ == '__main__':
-    mpd = MPEGDASHParser.parse('./../Encoder/var/media/sample_video/dash.mpd')
+    mpd = parse_mpd('./../Encoder/var/media/sample_video/dash.mpd')
     #mpd_data = extract_all_data(mpd)
     #print(mpd_data)
