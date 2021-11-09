@@ -1,27 +1,41 @@
 import os
-print("remove contents of out? (y/n)")
-#if input() == "y":
-os.system("rm out/*")
+def decoder(path, startindex, slutindex, quality):
+    quality1 = str(int(quality) + 1)
+    print("remove contents of out? (y/n)")
+    #if input() == "y":
+    os.system("rm out/*")
 
-os.system( "cat SampleVideo_1280x720_10mb/dash_init_0.m4s $(ls -vx SampleVideo_1280x720_10mb/dash_chunk_0_0000[0-3].m4s) > out/all0.m4s")
-os.system( "cat SampleVideo_1280x720_10mb/dash_init_1.m4s $(ls -vx SampleVideo_1280x720_10mb/dash_chunk_1_0000[0-3].m4s) > out/all1.m4s")
+    os.system( "cat " + path + "/dash_init_" + quality + ".m4s $(ls -vx " + path + "/dash_chunk_" + quality + "_0000[" + startindex + "-" + slutindex + "].m4s) > out/all" + quality + ".m4s")
+    os.system( "cat " + path + "/dash_init_" + quality1 + ".m4s $(ls -vx " + path + "/dash_chunk_" + quality1 + "_0000[" + startindex + "-" + slutindex + "].m4s) > out/all" + quality1 + ".m4s")
+    #os.system( "cat SampleVideo_1280x720_10mb/dash_init_0.m4s $(ls -vx SampleVideo_1280x720_10mb/dash_chunk_0_0000[0-3].m4s) > out/all0.m4s")
+    #os.system( "cat SampleVideo_1280x720_10mb/dash_init_1.m4s $(ls -vx SampleVideo_1280x720_10mb/dash_chunk_1_0000[0-3].m4s) > out/all1.m4s")
 
-os.system( "cat SampleVideo_1280x720_10mb/dash_init_0.m4s $(ls -vx SampleVideo_1280x720_10mb/dash_chunk_0_0000[4-7].m4s) > out/all0_.m4s")
-os.system( "cat SampleVideo_1280x720_10mb/dash_init_1.m4s $(ls -vx SampleVideo_1280x720_10mb/dash_chunk_1_0000[4-7].m4s) > out/all1_.m4s")
+    #os.system( "cat SampleVideo_1280x720_10mb/dash_init_0.m4s $(ls -vx SampleVideo_1280x720_10mb/dash_chunk_0_0000[4-7].m4s) > out/all0_.m4s")
+    #os.system( "cat SampleVideo_1280x720_10mb/dash_init_1.m4s $(ls -vx SampleVideo_1280x720_10mb/dash_chunk_1_0000[4-7].m4s) > out/all1_.m4s")
 
-#os.system("ffmpeg -i out/all5.m4s -c copy out/Vid5.mp4")
-os.system("ffmpeg -i out/all0.m4s -i out/all1.m4s -c:v copy -c:a aac out/all01.mp4")
-os.system("ffmpeg -i out/all0_.m4s -i out/all1_.m4s -c:v copy -c:a aac out/all01_.mp4")
+    #os.system("ffmpeg -i out/all5.m4s -c copy out/Vid5.mp4")
+    os.system("ffmpeg -i out/all" + quality + ".m4s -i out/all" + quality1 + ".m4s -c:v copy -c:a aac out/vid" + slutindex + ".mp4")
+    #os.system("ffmpeg -i out/all0_.m4s -i out/all1_.m4s -c:v copy -c:a aac out/all01_.mp4")
 
-print("Play vid? (y/n)")
-#if input() == "y":
-os.system("xdg-open out/all01.mp4")
+    #print("Play vid? (y/n)")
+    #if input() == "y":
+    #os.system("xdg-open out/all01.mp4")
 
-os.system("printf \"file '%s'\n\" out/*.mp4 > mylist.txt")
-os.system("ffmpeg -f concat -i mylist.txt -c copy out/tmp.mp4")
-os.system("ffmpeg -i out/tmp.mp4 -c copy out/all01.mp4 -y")
-#echo \"y\" | 
-os.system("xdg-open out/all01.mp4")
+    #os.system("printf \"file '%s'\n\" out/*.mp4 > mylist.txt")
+    #os.system("ffmpeg -f concat -i mylist.txt -c copy out/tmp.mp4")
+    #os.system("ffmpeg -i out/tmp.mp4 -c copy out/all01.mp4 -y")
+    #echo \"y\" | 
+    #os.system("xdg-open out/all01.mp4")
+
+def main():
+    path = 'SampleVideo_1280x720_10mb'
+    startindex = '1'
+    slutindex = '3'
+    quality = '0'
+    decoder(path, startindex, slutindex, quality)
+
+if __name__ == "__main__":
+    main()
 
 #print("Play vid? (y/n)")
 #if input() == "y":
