@@ -1,4 +1,3 @@
-
 import os
 
 #Post: Returns false if a given file has content, otherwise true
