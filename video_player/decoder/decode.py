@@ -1,40 +1,49 @@
 import os
 import subprocess
+
+def test_path():
+    subprocess.run(["ls"])
+
 def decoder(path, si, ei, quality):
     quality1 = str(int(quality) + 1)
 
+    output_directory = "vid/out"
+
     if(len(si.lstrip('0')) == 0):
         return False, 'Invalid startindex'
-        
+
     chnks = [str(item).zfill(len(ei)) for item in [*range(int(si.lstrip('0')), int(ei.lstrip('0'))+1)]]
 
-    print("remove contents of out? (y/n)")
-    subprocess.run("rm out/*", shell = True, check = True)
+    try:
+        subprocess.run("rm " + output_directory + "/*", shell = True, check = True)
+    except subprocess.CalledProcessError as e:
+        print("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
+
 
 
 
     if(os.path.isfile(path + "/dash_init_" + quality + ".m4s") & os.path.isfile(path + "/dash_init_" + quality1 + ".m4s")):
         try:
-            subprocess.run( "cat " + path + "/dash_init_" + quality + ".m4s > out/all" + quality + ".m4s", shell = True, check = True)
-            subprocess.run( "cat " + path + "/dash_init_" + quality1 + ".m4s > out/all" + quality1 + ".m4s", shell = True, check = True)
+            subprocess.run( "cat " + path + "/dash_init_" + quality + ".m4s > " + output_directory + "/all" + quality + ".m4s", shell = True, check = True)
+            subprocess.run( "cat " + path + "/dash_init_" + quality1 + ".m4s > " + output_directory + "/all" + quality1 + ".m4s", shell = True, check = True)
         except subprocess.CalledProcessError:
             print("OPS")
 
-    
+
         for c in chnks:
             if(os.path.isfile(path + "/dash_chunk_" + quality + "_"+str(c)+".m4s") & os.path.isfile(path + "/dash_chunk_" + quality1 + "_"+str(c)+".m4s")):
                 print(f'c is {c}')
                 try:
-                    subprocess.run( "cat $(ls -vx " + path + "/dash_chunk_" + quality + "_"+str(c)+".m4s) >> out/all" + quality + ".m4s", shell = True, check = True)
-                    subprocess.run( "cat $(ls -vx " + path + "/dash_chunk_" + quality1 + "_"+str(c)+".m4s) >> out/all" + quality1 + ".m4s", shell = True, check = True)
+                    subprocess.run( "cat $(ls -vx " + path + "/dash_chunk_" + quality + "_"+str(c)+".m4s) >> " + output_directory + "/all" + quality + ".m4s", shell = True, check = True)
+                    subprocess.run( "cat $(ls -vx " + path + "/dash_chunk_" + quality1 + "_"+str(c)+".m4s) >> " + output_directory + "/all" + quality1 + ".m4s", shell = True, check = True)
                 except subprocess.CalledProcessError:
                     print("O.P.S.I.E" + str(c))
             else:
                 return False, f'chunk creation failed: {c}'
 
-        subprocess.run("ffmpeg -i out/all" + quality + ".m4s -i out/all" + quality1 + ".m4s -c:v copy -c:a aac out/vid" + ei + ".mp4", shell = True, check = True)
-        return True, "out/vid" + ei + ".mp4"
-        
+        subprocess.run("ffmpeg -i " + output_directory + "/all" + quality + ".m4s -i " + output_directory + "/all" + quality1 + ".m4s -c:v copy -c:a aac " + output_directory + "/vid" + ei + ".mp4", shell = True, check = True)
+        return True, output_directory + "/vid" + ei + ".mp4"
+
     else:
         return False, 'Init file failed'
 
