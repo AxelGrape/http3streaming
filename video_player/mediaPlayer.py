@@ -2,12 +2,13 @@ from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QVB
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl
+from client.client_interface import request_movie_list
 import sys
 
 class Window(QWidget):
     def __init__(self):
         super().__init__()
-        
+
         self.setWindowTitle("Media Player")
         self.setGeometry(350, 100, 700, 500)
 
@@ -22,8 +23,8 @@ class Window(QWidget):
         videoWidget = QVideoWidget()
 
         # Create 'Open Video' button
-        openBtn = QPushButton("Open Video")
-        openBtn.clicked.connect(self.open_file)
+        refreshBtn = QPushButton("Refresh list")
+        refreshBtn.clicked.connect(self.refresh_movie_list)
 
         # Create 'Play' button
         self.playBtn = QPushButton()
@@ -44,7 +45,7 @@ class Window(QWidget):
         hBoxLayout.setContentsMargins(0, 0, 0, 0)
 
         # Set widgets to the hbox layout
-        hBoxLayout.addWidget(openBtn)
+        hBoxLayout.addWidget(refreshBtn)
         hBoxLayout.addWidget(self.playBtn)
         hBoxLayout.addWidget(self.slider)
 
@@ -62,6 +63,13 @@ class Window(QWidget):
         self.mediaPlayer.positionChanged.connect(self.position_changed)
         self.mediaPlayer.durationChanged.connect(self.duration_changed)
 
+
+    def refresh_movie_list(self):
+        pathy = request_movie_list()
+        with open(pathy) as f:
+            lines = f.read().splitlines()
+        print(lines)
+        print("TODO")
 
     def open_file(self):
         fileName, _ = QFileDialog.getOpenFileName(self, "Open Video")
@@ -86,7 +94,7 @@ class Window(QWidget):
     def position_changed(self, time):
         self.slider.setValue(time)
 
-    
+
     def duration_changed(self, duration):
         self.slider.setRange(0, duration)
 

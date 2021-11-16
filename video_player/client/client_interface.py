@@ -11,7 +11,7 @@ def request_file(file_name):
 
 #Post: List of all available movies
 def request_movie_list():
-    return get_request("/list_movies")
+    return get_request("list_movies")
 
 # Pre: Params is a list of parameters that start with "./hq", "-mode=client" etc. Example list: params = ["./hq", "-mode=client", "-path=/hello.txt"]
 def custom_request(params):
