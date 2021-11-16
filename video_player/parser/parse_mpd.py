@@ -1,6 +1,4 @@
 from mpegdash.parser import MPEGDASHParser
-from re import sub
-import shutil
 
 """
 
@@ -21,21 +19,15 @@ Number of Segments = mediaPresentationDuration / Segment Duration
 
 """
 
-class Parser():
+class MPDParser():
 
-    def __init__(self, file_name):
-        # Parse the mpd file
-        self.mpd = MPEGDASHParser.parse(file_name)
-
-        # Initiate some values
-        self.buffer = []
-        self.media_length = self.get_presentation_duration()
-        self.max_segment_duration = self.get_segment_duration()
-        self.min_buffer_time = self.get_buffer_time()
+    def __init__(self, file_path):
+        self.mpd = MPEGDASHParser.parse(file_path)
+        self.next_segment = 1
 
 
     # PTxHxMxS --> Hours:Minutes:Seconds
-    # Extract total time and return in seconds
+    # Returns the time in seconds
     def _parse_time(self, time):
         formatted_time = time.replace("PT", "").replace("H", ":").replace("M", ":").replace("S", "")
         temp = formatted_time.split(":")
@@ -49,22 +41,12 @@ class Parser():
 
 
     # Extract the file names of a representation
-    def __get_media_files(self, ss, temp_file):
-        media_files = []
-
-        i = 1
-        for time in ss:
-            if time.r != None:
-                for _ in range(time.r + 1):
-                    chunk_number = "%05d" % i
-                    media_files.append(temp_file.replace("$Number%05d$", chunk_number))
-                    i += 1
-            else:
-                chunk_number = "%05d" % i
-                media_files.append(temp_file.replace("$Number%05d$", chunk_number))
-                i += 1
-        
-        return media_files
+    # Start: index of the first file
+    # Duration: amount of seconds that should be retrieved
+    def __get_file(self, ss, temp_file):
+        chunk_number = "%05d" % self.next_segment
+        _file = temp_file.replace("$Number%05d$", chunk_number)
+        return _file
 
 
     def get_presentation_duration(self):
@@ -87,74 +69,57 @@ class Parser():
         else:
             return None
 
-
-    def fill_buffer(self, bandwidth):
-        # Fill a buffer with the segments to fill up min_buffer_time
-        # Use buffer to pick next segment
-
-        for adaptation_set in self.mpd.periods[0].adaptation_sets:
-            for representation in adaptation_set.representations:
-                if bandwidth >= representation.bandwidth and representation.mime_type == "video/mp4":
-                    chunks = self.get_representation_chunks(int(representation.id))
-                    buffer_time = 0
-                    for chunk in chunks.values():
-                        for index, media_chunk in enumerate(chunk[1]):
-                            if buffer_time < self.min_buffer_time:
-                                self.buffer.append(media_chunk)
-                                buffer_time += representation.segment_templates[0].segment_timelines[0].Ss[index].d / representation.segment_templates[0].timescale
-                    return
+    def get_next_segment(self, representation_id):
+        chunks = self.get_representation_chunks(representation_id)
+        return chunks["media"], chunks["audio"]
 
 
-    def get_next_segment(self):
-        # TO DO:
-        # Return the next segment
-        return 0
+    # Return a tuple of init files: (media, audio)
+    def get_init_chunk(self, representation_id):
+        video_adaptation = self.mpd.periods[0].adaptation_sets[representation_id]
+        audio_adaptation = self.mpd.periods[0].adaptation_sets[representation_id + 1]
+
+        init_media = video_adaptation.representations[0].segment_templates[0].initialization.replace("$RepresentationID$", str(representation_id))
+        init_audio = audio_adaptation.representations[0].segment_templates[0].initialization.replace("$RepresentationID$", str(representation_id + 1))
+        return init_media, init_audio
 
 
-    # Get data from a specific representation
-    def get_representation_chunks(self, representation_id):
-        mpd_data = {}
+    # Get data from a specific representation and start time (timescale format)
+    # Returns a dictionary with media and audio files
+    def get_representation_chunks(self, representation_id, duration = 10):
+        chunks = {}
+        video_adaptation = self.mpd.periods[0].adaptation_sets[representation_id]
+        audio_adaptation = self.mpd.periods[0].adaptation_sets[representation_id + 1]
 
-        for representation in self.mpd.periods[0].adaptation_sets[representation_id].representations:
-            for segment in representation.segment_templates:
-                # Get the init file name and media file name from the mpd file
-                # Replace $RepresentationID$ with the actual representation id
-                init_file = segment.initialization.replace("$RepresentationID$", representation.id)
-                temp_media_file = segment.media.replace("$RepresentationID$", representation.id)
-                
-                # Replace $Number%05d$ with the correct file chunk number
-                for timeline in segment.segment_timelines:
-                    media_files = self.__get_media_files(timeline.Ss, temp_media_file)
+        # Get media chunks
+        for segment in video_adaptation.representations[0].segment_templates:
+            # Get the media file name from the mpd file
+            # Replace $RepresentationID$ with the actual representation id
+            temp_media_file = segment.media.replace("$RepresentationID$", str(representation_id))
+
+            # Replace $Number%05d$ with the correct file chunk number
+            for timeline in segment.segment_timelines:
+                chunks["media"] = self.__get_file(timeline.Ss, temp_media_file)
+
+        # Get audio chunks
+        for segment in audio_adaptation.representations[0].segment_templates:
+            # Get the media file name from the mpd file
+            # Replace $RepresentationID$ with the actual representation id
+            temp_audio_file = segment.media.replace("$RepresentationID$", str(representation_id + 1))
             
-            mpd_data[representation_id] = [init_file, media_files]
-        return mpd_data
+            # Replace $Number%05d$ with the correct file chunk number
+            for timeline in segment.segment_timelines:
+                chunks["audio"] = self.__get_file(timeline.Ss, temp_audio_file)
 
-
-    # Get data from all the representations
-    def get_all_chunks(self):
-        mpd_data = {}
-
-        for adaptation_set in self.mpd.periods[0].adaptation_sets:
-            for representation in adaptation_set.representations:
-                for segment in representation.segment_templates:
-                    # Get the init file name and media file name from the mpd file
-                    # Replace $RepresentationID$ with the actual representation id
-                    init_file = segment.initialization.replace("$RepresentationID$", representation.id)
-                    temp_media_file = segment.media.replace("$RepresentationID$", representation.id)
-
-                    # Replace $Number%05d$ with the correct file chunk number
-                    for timeline in segment.segment_timelines:
-                        media_files = self.__get_media_files(timeline.Ss, temp_media_file)
-
-            mpd_data[representation.id] = [init_file, media_files]
-
-        return mpd_data
+        self.next_segment += 1
+        return chunks
 
 
 if __name__ == '__main__':
-    parser = Parser('./../Encoder/var/media/SampleVideo_1280x720_10mb/dash.mpd')
-    chunks = parser.get_all_chunks()
-    parser.fill_buffer(500000)
-    #mpd = parse_mpd('./../Encoder/var/media/SampleVideo_1280x720_10mb/dash.mpd')
-    #mpd_data = parser.get_all_files(mpd)
-    #print(mpd_data)
+    parser = MPDParser('./../Encoder/var/media/SampleVideo/dash.mpd')
+    media_segment, audio_segment = parser.get_next_segment(0)
+    print("Segment 1: {}, {}".format(media_segment, audio_segment))
+    media_segment, audio_segment = parser.get_next_segment(0)
+    print("Segment 2: {}, {}".format(media_segment, audio_segment))
+    media_segment, audio_segment = parser.get_next_segment(0)
+    print("Segment 3: {}, {}".format(media_segment, audio_segment))
