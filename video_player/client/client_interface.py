@@ -15,4 +15,4 @@ def request_movie_list():
 
 # Pre: Params is a list of parameters that start with "./hq", "-mode=client" etc. Example list: params = ["./hq", "-mode=client", "-path=/hello.txt"]
 def custom_request(params):
-    return custom_get_request(params);
+    return custom_get_request(params)
