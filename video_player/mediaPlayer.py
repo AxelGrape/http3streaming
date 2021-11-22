@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QSlider, QStyle, QSizePolicy, QFileDialog, QListWidget
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QSlider, QStyle, QSizePolicy, QFileDialog, QListWidget, QGridLayout
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl
@@ -22,7 +22,7 @@ class Window(QWidget):
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
 
         # Create video widget object
-        videoWidget = QVideoWidget()
+        self.videoWidget = QVideoWidget()
 
         # Create 'Refresh' button
         self.refreshBtn = QPushButton("Refresh list")
@@ -43,8 +43,8 @@ class Window(QWidget):
         self.slider.sliderMoved.connect(self.set_position)
 
         # Create a label
-        self.label = QLabel()
-        self.label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        #self.label = QLabel("tjo")
+        #self.label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
 
         # Create Listbox
         self.listwidget = QListWidget()
@@ -53,27 +53,19 @@ class Window(QWidget):
             self.listwidget.insertItem(i, movie)
         self.listwidget.clicked.connect(self.clicked)
 
-        # Create hbox layout
-        hBoxLayout = QHBoxLayout()
-        hBoxLayout.setContentsMargins(0, 0, 0, 0)
+        layout = QGridLayout()
 
-        # Set widgets to the hbox layout
+        layout.addWidget(self.listwidget, 0, 0, 1, 2)
+        layout.addWidget(self.videoWidget, 0, 3, 1, 7)
+        #layout.addWidget(self.label, 1, 0)
+        layout.addWidget(self.playBtn, 1, 3)
+        layout.addWidget(self.slider, 1, 4,)
+        layout.addWidget(self.refreshBtn, 1, 0)
+        layout.addWidget(self.selectMovieBtn, 1, 1)
 
 
-        hBoxLayout.addWidget(self.listwidget)
-        hBoxLayout.addWidget(self.playBtn)
-        hBoxLayout.addWidget(self.slider)
-        hBoxLayout.addWidget(self.refreshBtn)
-        hBoxLayout.addWidget(self.selectMovieBtn)
-
-        # Create vbox layout
-        vBoxLayout = QVBoxLayout()
-        vBoxLayout.addWidget(videoWidget)
-        vBoxLayout.addWidget(self.label)
-        vBoxLayout.addLayout(hBoxLayout)
-
-        self.setLayout(vBoxLayout)
-        self.mediaPlayer.setVideoOutput(videoWidget)
+        self.setLayout(layout)
+        self.mediaPlayer.setVideoOutput(self.videoWidget)
 
         # Media player signals
         self.mediaPlayer.stateChanged.connect(self.state_changed)
