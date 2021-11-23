@@ -4,6 +4,8 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl
 from client.client_interface import request_movie_list, request_file
 import sys
+import os
+from os.path import exists
 
 class Window(QWidget):
 
@@ -49,9 +51,10 @@ class Window(QWidget):
         # Create Listbox
         self.listwidget = QListWidget()
         self.refresh_movie_list()
-        for i, movie in enumerate(self.full_movie_list):
-            self.listwidget.insertItem(i, movie)
-        self.listwidget.clicked.connect(self.clicked)
+
+        #for i, movie in enumerate(self.full_movie_list):
+            #self.listwidget.insertItem(i, movie)
+        #self.listwidget.clicked.connect(self.clicked)
 
         layout = QGridLayout()
 
@@ -80,7 +83,7 @@ class Window(QWidget):
     def request_movie(self):
         item = self.listwidget.currentItem()
         if item is None:
-            print("You most choose a movie from the list")
+            print("You must choose a movie from the list")
         else:
             path = item.text()
             print(path.split("/")[-1])
@@ -88,14 +91,21 @@ class Window(QWidget):
             print(file_name)
             request_file(file_name)
 
+    def update_list_widget(self):
+        self.listwidget.clear()
+        for i, movie in enumerate(self.full_movie_list):
+            self.listwidget.insertItem(i, movie)
+
     def refresh_movie_list(self):
         pathy = request_movie_list()
-        with open(pathy) as f:
-            lines = f.read().splitlines()
-            print(lines)
-        self.full_movie_list = lines
-        print(lines)
-        print("TODO")
+        if(exists(pathy)):
+            if(os.stat("list_movies").st_size != 0):
+                with open(pathy) as f:
+                    lines = f.read().splitlines()
+                    print(lines)
+                self.full_movie_list = lines
+            os.remove(pathy)
+        self.update_list_widget()
 
     def open_file(self):
         fileName, _ = QFileDialog.getOpenFileName(self, "Open Video")
