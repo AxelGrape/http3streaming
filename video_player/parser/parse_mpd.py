@@ -24,6 +24,8 @@ class MPDParser():
     def __init__(self, file_path):
         self.mpd = MPEGDASHParser.parse(file_path)
         self.next_segment = 1
+        self.current_media_index = 0
+        self.current_audio_index = 0
 
 
     # PTxHxMxS --> Hours:Minutes:Seconds
@@ -43,10 +45,37 @@ class MPDParser():
     # Extract the file names of a representation
     # Start: index of the first file
     # Duration: amount of seconds that should be retrieved
-    def __get_file(self, ss, temp_file):
+    def __get_file(self, temp_file):
         chunk_number = "%05d" % self.next_segment
         _file = temp_file.replace("$Number%05d$", chunk_number)
         return _file
+
+
+    # Returns the duration of a segment in seconds
+    def get_segment_duration(self, segment_file: str):
+        if segment_file.endswith(".m4s"):
+            index = int(segment_file[-9:-4])
+            repr_id = int(segment_file[-11])
+        else:
+            index = int(segment_file[-5::])
+            repr_id = int(segment_file[-7])
+
+        template = self.mpd.periods[0].adaptation_sets[repr_id].representations[0].segment_templates[0]
+        ss = template.segment_timelines[0].Ss
+
+        count = 0
+
+        for i, value in enumerate(ss):
+            count += 1
+            if count >= index:
+                return ss[i].d / template.timescale
+
+            if value.r != None:
+                for r in range(value.r):
+                    count += 1
+                    if count >= index:
+                        return ss[i].d / template.timescale
+
 
 
     def get_presentation_duration(self):
@@ -56,7 +85,7 @@ class MPDParser():
             return None
 
 
-    def get_segment_duration(self):
+    def get_max_segment_duration(self):
         if self.mpd.max_segment_duration is not None:
             return self._parse_time(self.mpd.max_segment_duration)
         else:
@@ -69,13 +98,16 @@ class MPDParser():
         else:
             return None
 
-    def get_next_segment(self, representation_id):
-        chunks = self.get_representation_chunks(representation_id)
-        return chunks["media"], chunks["audio"]
+    
+    # Return a tuple of media and audio chunks (media, audio)
+    def get_next_segment(self, representation_id: int):
+        segments = self.representation_chunks(representation_id)
+        return segments["media"], segments["audio"]
+        #return self.representation_chunks(representation_id)
 
 
     # Return a tuple of init files: (media, audio)
-    def get_init_chunk(self, representation_id):
+    def init_chunk(self, representation_id):
         video_adaptation = self.mpd.periods[0].adaptation_sets[representation_id]
         audio_adaptation = self.mpd.periods[0].adaptation_sets[representation_id + 1]
 
@@ -86,40 +118,31 @@ class MPDParser():
 
     # Get data from a specific representation and start time (timescale format)
     # Returns a dictionary with media and audio files
-    def get_representation_chunks(self, representation_id, duration = 10):
+    def representation_chunks(self, representation_id):
         chunks = {}
         video_adaptation = self.mpd.periods[0].adaptation_sets[representation_id]
         audio_adaptation = self.mpd.periods[0].adaptation_sets[representation_id + 1]
 
         # Get media chunks
-        for segment in video_adaptation.representations[0].segment_templates:
+        for media_segment in video_adaptation.representations[0].segment_templates:
             # Get the media file name from the mpd file
             # Replace $RepresentationID$ with the actual representation id
-            temp_media_file = segment.media.replace("$RepresentationID$", str(representation_id))
+            temp_media_file = media_segment.media.replace("$RepresentationID$", str(representation_id))
 
             # Replace $Number%05d$ with the correct file chunk number
-            for timeline in segment.segment_timelines:
-                chunks["media"] = self.__get_file(timeline.Ss, temp_media_file)
+            for media_timeline in media_segment.segment_timelines:
+                chunks["media"] = self.__get_file(temp_media_file)
+
 
         # Get audio chunks
-        for segment in audio_adaptation.representations[0].segment_templates:
+        for audio_segment in audio_adaptation.representations[0].segment_templates:
             # Get the media file name from the mpd file
             # Replace $RepresentationID$ with the actual representation id
-            temp_audio_file = segment.media.replace("$RepresentationID$", str(representation_id + 1))
+            temp_audio_file = audio_segment.media.replace("$RepresentationID$", str(representation_id + 1))
             
             # Replace $Number%05d$ with the correct file chunk number
-            for timeline in segment.segment_timelines:
-                chunks["audio"] = self.__get_file(timeline.Ss, temp_audio_file)
+            for audio_timeline in audio_segment.segment_timelines:
+                chunks["audio"] = self.__get_file(temp_audio_file)
 
         self.next_segment += 1
         return chunks
-
-
-if __name__ == '__main__':
-    parser = MPDParser('./../Encoder/var/media/SampleVideo/dash.mpd')
-    media_segment, audio_segment = parser.get_next_segment(0)
-    print("Segment 1: {}, {}".format(media_segment, audio_segment))
-    media_segment, audio_segment = parser.get_next_segment(0)
-    print("Segment 2: {}, {}".format(media_segment, audio_segment))
-    media_segment, audio_segment = parser.get_next_segment(0)
-    print("Segment 3: {}, {}".format(media_segment, audio_segment))

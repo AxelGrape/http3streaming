@@ -1,4 +1,5 @@
 from decoder.decoder_interface import decode_segment
+from parser.parse_mpd import MPDParser
 
 
 class RunHandler:
