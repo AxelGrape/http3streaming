@@ -1,12 +1,16 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QSlider, QStyle, QSizePolicy, QFileDialog
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QSlider, QStyle, QSizePolicy, QFileDialog, QListWidget, QGridLayout
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl
-from client.client_interface import request_movie_list
+from client.client_interface import request_movie_list, request_file
 import sys
+import os
+from os.path import exists
 
 class Window(QWidget):
+
     def __init__(self):
+        self.full_movie_list = []
         super().__init__()
 
         self.setWindowTitle("Media Player")
@@ -20,11 +24,15 @@ class Window(QWidget):
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
 
         # Create video widget object
-        videoWidget = QVideoWidget()
+        self.videoWidget = QVideoWidget()
 
-        # Create 'Open Video' button
-        refreshBtn = QPushButton("Refresh list")
-        refreshBtn.clicked.connect(self.refresh_movie_list)
+        # Create 'Refresh' button
+        self.refreshBtn = QPushButton("Refresh list")
+        self.refreshBtn.clicked.connect(self.refresh_movie_list)
+
+        # Create 'Select Video' button
+        self.selectMovieBtn = QPushButton("Select movie")
+        self.selectMovieBtn.clicked.connect(self.request_movie)
 
         # Create 'Play' button
         self.playBtn = QPushButton()
@@ -37,39 +45,67 @@ class Window(QWidget):
         self.slider.sliderMoved.connect(self.set_position)
 
         # Create a label
-        self.label = QLabel()
-        self.label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        #self.label = QLabel("tjo")
+        #self.label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
 
-        # Create hbox layout
-        hBoxLayout = QHBoxLayout()
-        hBoxLayout.setContentsMargins(0, 0, 0, 0)
+        # Create Listbox
+        self.listwidget = QListWidget()
+        self.refresh_movie_list()
 
-        # Set widgets to the hbox layout
-        hBoxLayout.addWidget(refreshBtn)
-        hBoxLayout.addWidget(self.playBtn)
-        hBoxLayout.addWidget(self.slider)
+        #for i, movie in enumerate(self.full_movie_list):
+            #self.listwidget.insertItem(i, movie)
+        #self.listwidget.clicked.connect(self.clicked)
 
-        # Create vbox layout
-        vBoxLayout = QVBoxLayout()
-        vBoxLayout.addWidget(videoWidget)
-        vBoxLayout.addWidget(self.label)
-        vBoxLayout.addLayout(hBoxLayout)
+        layout = QGridLayout()
 
-        self.setLayout(vBoxLayout)
-        self.mediaPlayer.setVideoOutput(videoWidget)
+        layout.addWidget(self.listwidget, 0, 0, 1, 2)
+        layout.addWidget(self.videoWidget, 0, 3, 1, 7)
+        #layout.addWidget(self.label, 1, 0)
+        layout.addWidget(self.playBtn, 1, 3)
+        layout.addWidget(self.slider, 1, 4,)
+        layout.addWidget(self.refreshBtn, 1, 0)
+        layout.addWidget(self.selectMovieBtn, 1, 1)
+
+
+        self.setLayout(layout)
+        self.mediaPlayer.setVideoOutput(self.videoWidget)
 
         # Media player signals
         self.mediaPlayer.stateChanged.connect(self.state_changed)
         self.mediaPlayer.positionChanged.connect(self.position_changed)
         self.mediaPlayer.durationChanged.connect(self.duration_changed)
 
+    # When a movie have been "clicked"
+    def clicked (self, qmodelindex):
+        item = self.listwidget.currentItem()
+        #print(item.text())
+
+    def request_movie(self):
+        item = self.listwidget.currentItem()
+        if item is None:
+            print("You must choose a movie from the list")
+        else:
+            path = item.text()
+            print(path.split("/")[-1])
+            file_name = path.split("/")[-1] + "/" + path.split("/")[-1] + ".mp4"
+            print(file_name)
+            request_file(file_name)
+
+    def update_list_widget(self):
+        self.listwidget.clear()
+        for i, movie in enumerate(self.full_movie_list):
+            self.listwidget.insertItem(i, movie)
 
     def refresh_movie_list(self):
         pathy = request_movie_list()
-        with open(pathy) as f:
-            lines = f.read().splitlines()
-        print(lines)
-        print("TODO")
+        if(exists(pathy)):
+            if(os.stat("list_movies").st_size != 0):
+                with open(pathy) as f:
+                    lines = f.read().splitlines()
+                    print(lines)
+                self.full_movie_list = lines
+            os.remove(pathy)
+        self.update_list_widget()
 
     def open_file(self):
         fileName, _ = QFileDialog.getOpenFileName(self, "Open Video")
