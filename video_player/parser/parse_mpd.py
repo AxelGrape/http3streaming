@@ -24,8 +24,6 @@ class MPDParser():
     def __init__(self, file_path):
         self.mpd = MPEGDASHParser.parse(file_path)
         self.next_segment = 1
-        self.current_media_index = 0
-        self.current_audio_index = 0
 
 
     # PTxHxMxS --> Hours:Minutes:Seconds
@@ -103,7 +101,6 @@ class MPDParser():
     def get_next_segment(self, representation_id: int):
         segments = self.representation_chunks(representation_id)
         return segments["media"], segments["audio"]
-        #return self.representation_chunks(representation_id)
 
 
     # Return a tuple of init files: (media, audio)
