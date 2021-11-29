@@ -51,7 +51,7 @@ class MPDParser():
 
     # Returns the duration of a segment in seconds
     def get_segment_duration(self, segment_file: str):
-        if segment_file.endswith(".m4s"):
+        if segment_file.endswith('.m4s'):
             index = int(segment_file[-9:-4])
             repr_id = int(segment_file[-11])
         else:
@@ -105,8 +105,15 @@ class MPDParser():
 
     # Return a tuple of init files: (media, audio)
     def init_chunk(self, representation_id):
-        video_adaptation = self.mpd.periods[0].adaptation_sets[representation_id]
-        audio_adaptation = self.mpd.periods[0].adaptation_sets[representation_id + 1]
+        try:
+            video_adaptation = self.mpd.periods[0].adaptation_sets[representation_id]
+            audio_adaptation = self.mpd.periods[0].adaptation_sets[representation_id + 1]
+        except IndexError:
+            print("Error: Quality {} is not available".format(representation_id))
+            return
+        except:
+            print("Something went wrong ;(")
+            return
 
         init_media = video_adaptation.representations[0].segment_templates[0].initialization.replace("$RepresentationID$", str(representation_id))
         init_audio = audio_adaptation.representations[0].segment_templates[0].initialization.replace("$RepresentationID$", str(representation_id + 1))
@@ -117,8 +124,15 @@ class MPDParser():
     # Returns a dictionary with media and audio files
     def representation_chunks(self, representation_id):
         chunks = {}
-        video_adaptation = self.mpd.periods[0].adaptation_sets[representation_id]
-        audio_adaptation = self.mpd.periods[0].adaptation_sets[representation_id + 1]
+        try:
+            video_adaptation = self.mpd.periods[0].adaptation_sets[representation_id]
+            audio_adaptation = self.mpd.periods[0].adaptation_sets[representation_id + 1]
+        except IndexError as error:
+            print("Error: Quality {} is not available".format(representation_id))
+            return
+        except:
+            print("Something went wrong ;(")
+            return
 
         # Get media chunks
         for media_segment in video_adaptation.representations[0].segment_templates:
