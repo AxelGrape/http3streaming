@@ -1,4 +1,5 @@
 from client.client_comm import get_request, custom_get_request
+import os
 
 #Usage:
 #import interface.py and use one of these functions, do not import client_comm
@@ -6,12 +7,12 @@ from client.client_comm import get_request, custom_get_request
 
 #Pre: a file name, e.g. "hello.txt"
 #Post: True or false if the file was able to be downloaded or not
-def request_file(file_name):
-    return get_request(file_name)
+def request_file(file_name, storage_path):
+    return get_request(file_name, storage_path)
 
 #Post: List of all available movies
 def request_movie_list():
-    return get_request("list_movies")
+    return get_request("list_movies", os.getcwd())
 
 # Pre: Params is a list of parameters that start with "./hq", "-mode=client" etc. Example list: params = ["./hq", "-mode=client", "-path=/hello.txt"]
 def custom_request(params):

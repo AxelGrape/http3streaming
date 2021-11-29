@@ -4,12 +4,14 @@ import subprocess
 def test_path():
     subprocess.run(["ls"])
 
-def decoder(path, si, ei, quality):
+def decoder(path, si, ei, quality, file_name):
     #quality is vid, quality+1 is audio.
     quality1 = str(int(quality) + 1)
 
-    #Set output directory for audio/video .m4s files and final .mp4 file 
-    output_directory = "vid/out"
+    #Set output directory for audio/video .m4s files and final .mp4 file
+    output_directory = f'vid/{file_name}/out'
+    if not os.path.isdir(output_directory):
+        os.mkdir(output_directory)
 
     #Check if start index is all zeroes. Return with False if all zeroes.
     if(len(si.lstrip('0')) == 0):
@@ -20,7 +22,7 @@ def decoder(path, si, ei, quality):
 
     #Clear output directory. If already empty, print exception and continue.
     try:
-        subprocess.run("rm " + output_directory + "/*", shell = True, check = True)
+        subprocess.run("rm " + output_directory + "/all*", shell = True, check = True)
     except subprocess.CalledProcessError as e:
         print("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
 
