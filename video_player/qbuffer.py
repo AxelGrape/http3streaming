@@ -1,45 +1,22 @@
 import threading
+import sys
 import time
 from parser.parse_mpd import MPDParser
 
-"""
-class myThread(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.paused = False
-        self.pause_cond = threading.Thread(threading.Lock())
-
-    
-    def run(self):
-        print("Starting")
-        while True:
-            with self.pause_cond:
-                while self.paused:
-                    self.pause_cond.wait()
-                
-                print("Fill buffer")
-        print("Ending")
-    
-
-    def pause(self):
-        self.paused = True
-        self.pause_cond.acquire()
-
-
-    def resume(self):
-        self.paused = False
-        self.pause_cond.notify()
-        self.pause_cond.release()
-"""
 
 class QBuffer():
 
     def __init__(self, mpd):
         self.buffer = []
         self.mpd = mpd
+        self.pause_cond = threading.Lock()
+        self.kill = threading.Event()
+
+        self.thread = threading.Thread(target=self.fill_buffer, args=(0,))
+        self.thread.start()
 
 
-    def buffer_time(self):
+    def current_buffer_time(self):
         sum = 0
         for i in range(len(self.buffer)):
             t = self.mpd.get_segment_duration(self.buffer[i][0])
@@ -48,18 +25,18 @@ class QBuffer():
         return sum
 
 
-    def fill_buffer(self, adaptation_set, pause_cond):
+    def fill_buffer(self, adaptation_set):
+        print("-"*50)
         min_buffer_time = self.mpd.get_buffer_time()
-        while True:
-            with pause_cond:
-                while self.buffer_time() < min_buffer_time:
+        while not self.kill.is_set():
+            with self.pause_cond:
+                while self.current_buffer_time() < min_buffer_time:
                     self.buffer.append(self.mpd.get_next_segment(adaptation_set))
-                print("Buffer: {}".format(qbuf.buffer))
+                print("Buffer: {}".format(self.buffer))
                 print("Pause thread")
-                pause_cond.acquire()
+                self.pause_cond.acquire()
+                print("-"*50)
                 print("Continue thread")
-        
-        print("Exiting thread")
 
 
     def add_segment(self, segment):
@@ -75,21 +52,30 @@ class QBuffer():
                     del self.buffer[0]
                 elif segment != None:
                     self.buffer.remove(segment)
+            self.pause_cond.release()
         except IndexError as error:
             print("Error: {}".format(error))
         except:
             print("Error: Something went wrong")
 
 
-if __name__ == '__main__':
-    parser = MPDParser('./vid/nature/dash.mpd')
-    qbuf = QBuffer(parser)
-    pause_cond = threading.Lock()
+    def end_thread(self):
+        self.kill.set()
+        self.pause_cond.release()
+        print("Exiting thread")
 
-    thread = threading.Thread(target=qbuf.fill_buffer, args=(0, pause_cond))
-    thread.start()
+
+if __name__ == '__main__':
+    parser = MPDParser('../server/Encoder/var/media/nature/dash.mpd')
+    qbuf = QBuffer(parser)
     
+    print("Remove segment")
     qbuf.remove_segment()
-    pause_cond.release()
-    thread.join()
-    print("Exiting main thread")
+    time.sleep(2)
+    qbuf.end_thread()
+
+    if qbuf.kill.is_set():
+        qbuf.thread.join()
+        print("Exiting main thread")
+        sys.exit()
+    
