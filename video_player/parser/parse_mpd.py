@@ -1,4 +1,5 @@
 from mpegdash.parser import MPEGDASHParser
+import math
 
 """
 
@@ -15,8 +16,17 @@ MPEGDASHParser:
 
 
 Segment Duration = Duration / Timescale
-Number of Segments = mediaPresentationDuration / Segment Duration
+Number of Segments = Media Presentation Duration / Segment Duration
 
+presentation = 58.30 = 3510
+timescale = 30000
+3510 * 30000 = 105 300 000
+
+presentation = 5.20.9 = 320.9
+timescale = 30000
+
+
+9627000 / 250250
 """
 
 class MPDParser():
@@ -38,6 +48,24 @@ class MPDParser():
             return (float(temp[0]) * 60) + float(temp[1])
         elif len(temp) == 3:
             return (float(temp[0]) * 60 * 60) + (float(temp[1]) * 60) + float(temp[2])
+
+
+    # Return the total amounts of file chunks in the video
+    def amount_of_segments(self):
+        template = self.mpd.periods[0].adaptation_sets[0].representations[0].segment_templates[0]
+        ss = template.segment_timelines[0].Ss
+        video_duration = self.get_presentation_duration() * template.timescale
+        tot = 0
+
+        for dur in ss:
+            tot += round(video_duration / dur.d)
+            if dur.r is not None:
+                d = dur.d * (dur.r + 1)
+            else:
+                d = dur.d
+            video_duration -= d
+
+        return tot
 
 
     # Extract the file names of a representation
@@ -65,17 +93,15 @@ class MPDParser():
 
         for i, value in enumerate(ss):
             count += 1
+
+            if value.r != None:
+                count += value.r
+
             if count >= index:
                 return ss[i].d / template.timescale
 
-            if value.r != None:
-                for r in range(value.r):
-                    count += 1
-                    if count >= index:
-                        return ss[i].d / template.timescale
 
-
-
+    # Returns total video duration in seconds
     def get_presentation_duration(self):
         if self.mpd.media_presentation_duration is not None:
             return self._parse_time(self.mpd.media_presentation_duration)
@@ -83,6 +109,7 @@ class MPDParser():
             return None
 
 
+    # Return max segment duration in seconds
     def get_max_segment_duration(self):
         if self.mpd.max_segment_duration is not None:
             return self._parse_time(self.mpd.max_segment_duration)
@@ -90,6 +117,7 @@ class MPDParser():
             return None
 
 
+    # Returns minimum buffer time in seconds
     def get_buffer_time(self):
         if self.mpd.min_buffer_time is not None:
             return self._parse_time(self.mpd.min_buffer_time)
@@ -100,7 +128,9 @@ class MPDParser():
     # Return a tuple of media and audio chunks (media, audio)
     def get_next_segment(self, representation_id: int):
         segments = self.representation_chunks(representation_id)
-        return segments["media"], segments["audio"]
+        if segments != False:
+            return segments["media"], segments["audio"]
+        return False
 
 
     # Return a tuple of init files: (media, audio)
@@ -110,10 +140,8 @@ class MPDParser():
             audio_adaptation = self.mpd.periods[0].adaptation_sets[representation_id + 1]
         except IndexError:
             print("Error: Quality {} is not available".format(representation_id))
-            return
         except:
             print("Something went wrong ;(")
-            return
 
         init_media = video_adaptation.representations[0].segment_templates[0].initialization.replace("$RepresentationID$", str(representation_id))
         init_audio = audio_adaptation.representations[0].segment_templates[0].initialization.replace("$RepresentationID$", str(representation_id + 1))
@@ -129,10 +157,8 @@ class MPDParser():
             audio_adaptation = self.mpd.periods[0].adaptation_sets[representation_id + 1]
         except IndexError as error:
             print("Error: Quality {} is not available".format(representation_id))
-            return
         except:
             print("Something went wrong ;(")
-            return
 
         # Get media chunks
         for media_segment in video_adaptation.representations[0].segment_templates:
@@ -155,5 +181,20 @@ class MPDParser():
             for audio_timeline in audio_segment.segment_timelines:
                 chunks["audio"] = self.__get_file(temp_audio_file)
 
-        self.next_segment += 1
+        if self.next_segment < self.amount_of_segments() + 1:
+            self.next_segment += 1
+        else:
+            return False
         return chunks
+
+
+if __name__ == '__main__':
+    parser = MPDParser('../../server/Encoder/var/media/nature/dash.mpd')
+    
+    for i in range(45):
+        try:
+            s = parser.get_next_segment(0)
+            print(parser.get_segment_duration(s[0]))
+        except:
+            print("No more segments available")
+    
