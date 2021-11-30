@@ -3,8 +3,10 @@ from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl
 from client.client_interface import request_movie_list, request_file
+from handler import RunHandler
 import sys
 import os
+import time
 from os.path import exists
 
 class Window(QWidget):
@@ -89,7 +91,22 @@ class Window(QWidget):
             print(path.split("/")[-1])
             file_name = path.split("/")[-1] + "/" + path.split("/")[-1] + ".mp4"
             print("JOOOOOOEL" + file_name)
-            request_file(file_name)
+            #request_file(file_name)
+            benjamin_hanterar = RunHandler()
+            self.playBtn.setEnabled(True)
+            benjamin_hanterar.request_mpd(path.split("/")[-1])
+            benjamin_hanterar.parse_mpd()
+            benjamin_hanterar.parse_segment()
+            self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile("/home/axel/Documents/School/HT2021/DVAE08/http3streaming/video_player/vid/nature/out/vid00001.mp4")))
+            self.mediaPlayer.play()
+            benjamin_hanterar.parse_segment()
+            time.sleep(benjamin_hanterar.get_segment_length())
+            self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile("/home/axel/Documents/School/HT2021/DVAE08/http3streaming/video_player/vid/nature/out/vid00002.mp4")))
+            self.mediaPlayer.play()
+            benjamin_hanterar.parse_segment()
+            time.sleep(benjamin_hanterar.get_segment_length())
+            self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile("/home/axel/Documents/School/HT2021/DVAE08/http3streaming/video_player/vid/nature/out/vid00003.mp4")))
+            self.mediaPlayer.play()
 
     def update_list_widget(self):
         self.listwidget.clear()

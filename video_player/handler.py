@@ -10,6 +10,7 @@ class RunHandler:
         self.title = None
         self.mpdPath = None
         self.parsedObj = None
+        self.nextSegment = None
         print("no")
 
     def hitIt(self):
@@ -70,7 +71,8 @@ class RunHandler:
             return False, "Failed to get parser object"
 
 
-
+    def get_segment_length(self):
+        return self.parsedObj.get_segment_duration(self.nextSegment)
 
 
     #PRE: parser object
@@ -78,6 +80,8 @@ class RunHandler:
     def parse_segment(self):
         q = 0
         segment = self.parsedObj.get_next_segment(q)
+        self.nextSegment = segment[0]
+        print(self.nextSegment)
         vidPath = self.mpdPath.replace("dash.mpd", "")
         try:
             index = segment[0][-9:-4]
@@ -91,6 +95,7 @@ class RunHandler:
         print("no")
         request_file(f'{self.title}/{segment[0]}', vidPath)
         request_file(f'{self.title}/{segment[1]}', vidPath)
+
         self.decode_segments(vidPath, index, index, quality)
 
 
@@ -126,6 +131,7 @@ def main():
     Handler.parse_mpd()
     Handler.parse_segment()
     Handler.parse_segment()
+    print(Handler.get_segment_length())
     #Handler.parse_segment()
 
 if __name__ == "__main__":
