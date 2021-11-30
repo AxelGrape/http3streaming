@@ -76,8 +76,8 @@ class Window(QWidget):
         self.mediaPlayer.durationChanged.connect(self.duration_changed)
 
     # When a movie have been "clicked"
-    def clicked (self, qmodelindex):
-        item = self.listwidget.currentItem()
+    #def clicked (self, qmodelindex):
+    #    item = self.listwidget.currentItem()
         #print(item.text())
 
     def request_movie(self):
@@ -88,7 +88,7 @@ class Window(QWidget):
             path = item.text()
             print(path.split("/")[-1])
             file_name = path.split("/")[-1] + "/" + path.split("/")[-1] + ".mp4"
-            print(file_name)
+            print("JOOOOOOEL" + file_name)
             request_file(file_name)
 
     def update_list_widget(self):
@@ -97,15 +97,18 @@ class Window(QWidget):
             self.listwidget.insertItem(i, movie)
 
     def refresh_movie_list(self):
-        pathy = request_movie_list()
-        if(exists(pathy)):
-            if(os.stat("list_movies").st_size != 0):
-                with open(pathy) as f:
-                    lines = f.read().splitlines()
-                    print(lines)
-                self.full_movie_list = lines
+        pathy = os.getcwd() + "/list_movies"
+        request_movie_list(os.getcwd())
+
+        if(os.path.isfile(pathy)):
+            if(exists(pathy)):
+                if(os.stat("list_movies").st_size != 0):
+                    with open(pathy) as f:
+                        lines = f.read().splitlines()
+                        print(lines)
+                    self.full_movie_list = lines
+            self.update_list_widget()
             os.remove(pathy)
-        self.update_list_widget()
 
     def open_file(self):
         fileName, _ = QFileDialog.getOpenFileName(self, "Open Video")

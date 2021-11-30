@@ -35,12 +35,15 @@ class RunHandler:
     #POST: path to downloaded .mpd file
     def request_mpd(self, filename):
         self.title = filename
-        dash_path = self.title + "/dash.mpd"
-        os.mkdir(f'{os.getcwd()}/vid/{filename}')
-        part_of_mpd_path = request_file(dash_path, f'{os.getcwd()}/vid/{filename}')
-        self.mpdPath = f'{part_of_mpd_path}/dash.mpd'
-        print(f'{os.path.isfile(self.mpdPath)}   file is   {self.mpdPath}')
-        if(os.path.isfile(self.mpdPath)):
+        dash_path = filename + "/dash.mpd"
+        dir_path = f'{os.getcwd()}/vid/{filename}'
+        os.mkdir(dir_path)
+
+        request_file(dash_path, dir_path)
+        self.mpdPath = f'{dir_path}/dash.mpd'
+        mpdPath_isfile = os.path.isfile(self.mpdPath)
+        print(f'{mpdPath_isfile}   file is   {self.mpdPath}')
+        if(mpdPath_isfile):
             print("ok")
             self.request_all_init_files(8)
             return self.mpdPath
