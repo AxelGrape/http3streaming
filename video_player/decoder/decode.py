@@ -12,6 +12,7 @@ def decoder(path, si, ei, quality, file_name):
     output_directory = f'vid/{file_name}/out'
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
+    print(output_directory)
 
     #Check if start index is all zeroes. Return with False if all zeroes.
     if(len(si.lstrip('0')) == 0):
@@ -50,18 +51,23 @@ def decoder(path, si, ei, quality, file_name):
 
         #copy and merge complete audio and video .m4s files into one .mp4 file with ffmpeg into output directory
         subprocess.run("ffmpeg -i " + output_directory + "/all" + quality + ".m4s -i " + output_directory + "/all" + quality1 + ".m4s -c:v copy -c:a aac " + output_directory + "/vid" + ei + ".mp4", shell = True, check = True)
+
+        #removes temporary .m4s files
+        subprocess.run("rm " + output_directory + "/*.m4s" , shell = True, check = True)
+
         return True, output_directory + "/vid" + ei + ".mp4"
 
     else:
-        return False, 'Init file failed'
+        return False, 'Init file failed: ' + path + "/dash_init_" + quality + ".m4s"
 
 def main():
     #used for testing
-    path = 'nature'
+    path = 'vid/nature'
     startindex = '00001'
     slutindex = '00007'
     quality = '0'
-    siri = decoder(path, startindex, slutindex, quality)
+    file_name = "nature"
+    siri = decoder(path, startindex, slutindex, quality, file_name)
 
     print("Playing video")
     if siri[0]:
