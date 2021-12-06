@@ -1,20 +1,28 @@
 import os
 from decoder.decoder_interface import decode_segment
 from client.client_interface import request_file, request_movie_list, custom_request
-from parser.parse_mpd import MPDParser
+from qbuffer import QBuffer
 
 class RunHandler:
 
 
-    def __init__(self):
-        self.title = None
+    def __init__(self, filename):
+        self.filename = filename
         self.mpdPath = None
-        self.parsedObj = None
+        self.Qbuf = None
         self.nextSegment = None
+        self.hitIt(filename)
         print("no")
 
-    def hitIt(self):
-        self.request_mpd()
+
+    def hitIt(self,filename):
+        self.mpdPath = self.request_mpd(filename)
+        if self.mpdPath == False:
+            return "Error getting mpdPath in : request_mpd("+filename+")"
+        self.init_QBuffer()
+        self.parse_segment()
+        self.parse_segment()
+        print(self.get_segment_length())
         print("no")
 
     #Extracts movie list content from file into a list
@@ -41,15 +49,16 @@ class RunHandler:
         os.mkdir(dir_path)
 
         request_file(dash_path, dir_path)
-        self.mpdPath = f'{dir_path}/dash.mpd'
-        mpdPath_isfile = os.path.isfile(self.mpdPath)
-        print(f'{mpdPath_isfile}   file is   {self.mpdPath}')
+        mpdPath = f'{dir_path}/dash.mpd'
+        mpdPath_isfile = os.path.isfile(mpdPath)
+        print(f'{mpdPath_isfile}   file is   {mpdPath}')
         if(mpdPath_isfile):
             print("ok")
             self.request_all_init_files(8)
-            return self.mpdPath
+            return mpdPath
         else:
             print("Bad filename")
+            return False
             #return False + 'Problem with downloading mpd' #prata med aksel och sitri
 
     def request_all_init_files(self, quality_count):
@@ -62,13 +71,13 @@ class RunHandler:
 
     #PRE: Path to downloaded .mpd file
     #POST: parser object
-    def parse_mpd(self):
+    def init_QBuffer(self):
         #self.mpdPath = ''
         try:
-            self.parsedObj = MPDParser(self.mpdPath)
+            self.Qbuf = QBuffer(self.mpdPath)
         except:
-            print("Failed to get parser object")
-            return False, "Failed to get parser object"
+            print("Failed to get QBuffer object")
+            return False, "Failed to get QBuffer object"
 
 
     def get_segment_length(self):
@@ -79,7 +88,7 @@ class RunHandler:
     #POST: path to next chunks(dir), Startindex, endindex, quality
     def parse_segment(self):
         q = 0
-        segment = self.parsedObj.get_next_segment(q)
+        segment = self.Qbuf.next_segment(q)
         self.nextSegment = segment[0]
         print(self.nextSegment)
         vidPath = self.mpdPath.replace("dash.mpd", "")
