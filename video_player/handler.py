@@ -11,18 +11,17 @@ class RunHandler:
         self.mpdPath = None
         self.Qbuf = None
         self.nextSegment = None
-        self.hitIt(filename)
+        print(self.hitIt(filename))
         print("no")
 
 
     def hitIt(self,filename):
         self.mpdPath = self.request_mpd(filename)
-        if self.mpdPath == False:
-            return "Error getting mpdPath in : request_mpd("+filename+")"
-        self.init_QBuffer()
-        self.parse_segment()
-        self.parse_segment()
-        print(self.get_segment_length())
+        if not self.mpdPath: return "Error getting mpdPath in : request_mpd("+filename+")"
+        tmp = self.init_QBuffer()
+        if not tmp[0]: return tmp
+        self.nextSegment = self.parse_segment()
+        if not self.nextSegment: return "Error getting first segment"
         print("no")
 
     #Extracts movie list content from file into a list
@@ -75,6 +74,7 @@ class RunHandler:
         #self.mpdPath = ''
         try:
             self.Qbuf = QBuffer(self.mpdPath)
+            return True
         except:
             print("Failed to get QBuffer object")
             return False, "Failed to get QBuffer object"
@@ -87,8 +87,7 @@ class RunHandler:
     #PRE: parser object
     #POST: path to next chunks(dir), Startindex, endindex, quality
     def parse_segment(self):
-        q = 0
-        segment = self.Qbuf.next_segment(q)
+        segment = self.Qbuf.next_segment()
         self.nextSegment = segment[0]
         print(self.nextSegment)
         vidPath = self.mpdPath.replace("dash.mpd", "")
@@ -105,7 +104,7 @@ class RunHandler:
         request_file(f'{self.title}/{segment[0]}', vidPath)
         request_file(f'{self.title}/{segment[1]}', vidPath)
 
-        self.decode_segments(vidPath, index, index, quality)
+        return self.decode_segments(vidPath, index, index, quality)
 
 
 
@@ -114,17 +113,22 @@ class RunHandler:
     def decode_segments(self, path, si, ei, q):
         success,mp4Path = decode_segment(path, si, ei, q, self.title)#(bool, pathToMp4File)
         if success :
-            print("Path is: " + mp4Path)
+            return mp4Path
             #continue with stuff
         else:
-            print("Error: " + mp4Path)
+            return False, mp4Path
             #handle fault stuff
 
-
+    #Used by the videoplayer to get next .mp4 path
+    def get_next_segment(self):
+        newSegment = self.nextSegment
+        self.nextSegment = self.parse_segment()
+        if not self.nextSegment: print("newSegment: " + newSegment + " ,Error in nextSegment")
+        return newSegment
     #PRE:
     #POST:
     #decides when new segments(chunks) should be sent to videoplayer
-    def queue_handler():
+    def queue_handler(self):
         print("no")
 
 
