@@ -18,15 +18,6 @@ MPEGDASHParser:
 Segment Duration = Duration / Timescale
 Number of Segments = Media Presentation Duration / Segment Duration
 
-presentation = 58.30 = 3510
-timescale = 30000
-3510 * 30000 = 105 300 000
-
-presentation = 5.20.9 = 320.9
-timescale = 30000
-
-
-9627000 / 250250
 """
 
 class MPDParser():
@@ -186,15 +177,4 @@ class MPDParser():
         else:
             return False
         return chunks
-
-
-if __name__ == '__main__':
-    parser = MPDParser('../../server/Encoder/var/media/nature/dash.mpd')
-    
-    for i in range(45):
-        try:
-            s = parser.get_next_segment(0)
-            print(parser.get_segment_duration(s[0]))
-        except:
-            print("No more segments available")
     

@@ -1,14 +1,13 @@
 import threading
 import sys
-import time
 from parser.parse_mpd import MPDParser
 
 
 class QBuffer():
 
-    def __init__(self, mpd):
+    def __init__(self, mpd_file):
         self.buffer = []
-        self.mpd = mpd
+        self.mpd = MPDParser(mpd_file)
         self.pause_cond = threading.Lock()
         self.kill = threading.Event()
 
@@ -19,25 +18,25 @@ class QBuffer():
     def current_buffer_time(self):
         sum = 0
         for i in range(len(self.buffer)):
-            t = self.mpd.get_segment_duration(self.buffer[i][0])
-            sum += t
+            sum += self.mpd.get_segment_duration(self.buffer[i][0])
 
         return sum
 
 
     def fill_buffer(self, adaptation_set):
-        print("-"*50)
         min_buffer_time = self.mpd.get_buffer_time()
         while not self.kill.is_set():
             with self.pause_cond:
                 while self.current_buffer_time() < min_buffer_time:
                     self.buffer.append(self.mpd.get_next_segment(adaptation_set))
-                print("Buffer: {}".format(self.buffer))
-                print("Pause thread")
                 self.pause_cond.acquire()
-                print("-"*50)
-                print("Continue thread")
 
+
+    def next_segment(self):
+        try:
+            return self.buffer.pop(0)
+        except IndexError:
+            return None
 
     def add_segment(self, segment):
         self.buffer.append(segment)
@@ -64,18 +63,20 @@ class QBuffer():
         self.pause_cond.release()
         print("Exiting thread")
 
-
+"""
 if __name__ == '__main__':
-    parser = MPDParser('../server/Encoder/var/media/nature/dash.mpd')
-    qbuf = QBuffer(parser)
+    #parser = MPDParser('../server/Encoder/var/media/nature/dash.mpd')
+    qbuf = QBuffer('../server/Encoder/var/media/nature/dash.mpd')
     
-    print("Remove segment")
-    qbuf.remove_segment()
-    time.sleep(2)
+    print("Buffer: {}".format(qbuf.buffer))
+    print("Next segment: {}".format(qbuf.next_segment()))
+    print("Buffer: {}".format(qbuf.buffer))
+    print("Next segment: {}".format(qbuf.next_segment()))
+    print("Next segment: {}".format(qbuf.next_segment()))
     qbuf.end_thread()
 
     if qbuf.kill.is_set():
         qbuf.thread.join()
         print("Exiting main thread")
         sys.exit()
-    
+"""
