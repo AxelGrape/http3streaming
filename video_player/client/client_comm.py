@@ -3,7 +3,7 @@ import client.file_handler
 import os
 
 def get_request(file_name, storage_path):
-    program_name = "./hq"
+    program_name = "./team"
     hq_mode = "-mode=client"
     file_path = "--path=/" + file_name
     store = "-outdir=" + storage_path

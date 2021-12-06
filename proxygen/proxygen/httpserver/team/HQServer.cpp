@@ -73,6 +73,9 @@ HTTPTransactionHandler* Dispatcher::getRequestHandler(HTTPMessage* msg,
     shouldPassHealthChecks = false;
     return new HealthCheckHandler(true, params);
   }
+  if (path == "/list_movies") {
+   return new MovieListHandler(true, params);
+  }
   if (path == "/wait" || path == "/release") {
     return new WaitReleaseHandler(
         folly::EventBaseManager::get()->getEventBase(), params);

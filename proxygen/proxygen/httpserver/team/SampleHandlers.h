@@ -15,6 +15,7 @@
 #include <mutex>
 #include <random>
 #include <vector>
+#include <filesystem>
 
 #include <folly/File.h>
 #include <folly/FileUtil.h>
@@ -431,7 +432,63 @@ class HealthCheckHandler : public BaseSampleHandler {
     txn_->sendHeaders(resp);
 
     txn_->sendBody(
-        folly::IOBuf::copyBuffer(healthy_ ? "1-AM-ALIVE" : "1-AM-NOT-WELL"));
+        folly::IOBuf::copyBuffer(healthy_ ? "1-AM-ALIV" : "1-AM-NOT-WELL"));
+  }
+
+  void onBody(std::unique_ptr<folly::IOBuf> /*chain*/) noexcept override {
+    VLOG(10) << "HealthCheckHandler::onBody";
+    assert(false);
+  }
+
+  void onEOM() noexcept override {
+    VLOG(10) << "HealthCheckHandler::onEOM";
+    txn_->sendEOM();
+  }
+
+  void onError(const proxygen::HTTPException& /*error*/) noexcept override {
+    txn_->sendAbort();
+  }
+
+ private:
+  bool healthy_;
+};
+
+class MovieListHandler : public BaseSampleHandler {
+ public:
+  MovieListHandler(bool healthy, const HQParams& params)
+      : BaseSampleHandler(params), healthy_(healthy) {
+  }
+
+  void onHeadersComplete(
+      std::unique_ptr<proxygen::HTTPMessage> msg) noexcept override {
+    VLOG(10) << "HealthCheckHandler::onHeadersComplete";
+    proxygen::HTTPMessage resp;
+    VLOG(10) << "Setting http-version to " << getHttpVersion();
+    resp.setVersionString(getHttpVersion());
+    if (msg->getMethod() == proxygen::HTTPMethod::GET) {
+      resp.setStatusCode(healthy_ ? 200 : 400);
+      resp.setStatusMessage(healthy_ ? "Ok" : "Not Found");
+    } else {
+      resp.setStatusCode(405);
+      resp.setStatusMessage("Method not allowed");
+    }
+    resp.setWantsKeepalive(true);
+    maybeAddAltSvcHeader(resp);
+
+    //path to movie folders
+    std::string toupdate ="test";
+    std::string path = "/home/axel/Downloads/movies/";
+    std::string movie_list;
+    for (const auto & entry : std::filesystem::directory_iterator(path)) {
+      movie_list.append(entry.path());
+      movie_list.append("\n");
+    }
+
+
+    txn_->sendHeaders(resp);
+
+    txn_->sendBody(
+        folly::IOBuf::copyBuffer(movie_list));
   }
 
   void onBody(std::unique_ptr<folly::IOBuf> /*chain*/) noexcept override {
