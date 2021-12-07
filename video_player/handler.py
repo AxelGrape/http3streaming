@@ -11,17 +11,22 @@ class RunHandler:
         self.mpdPath = None
         self.Qbuf = None
         self.nextSegment = None
+        self.nextVid = None
         print(self.hitIt(filename))
         print("no")
 
 
     def hitIt(self,filename):
         self.mpdPath = self.request_mpd(filename)
-        if not self.mpdPath: return "Error getting mpdPath in : request_mpd("+filename+")"
+        if not self.mpdPath:
+            return "Error getting mpdPath in : request_mpd("+filename+")"
         tmp = self.init_QBuffer()
-        if not tmp[0]: return tmp
-        self.nextSegment = self.parse_segment()
-        if not self.nextSegment: return "Error getting first segment"
+        print(tmp)
+        if not tmp[0]:
+            return tmp
+        self.nextVid = self.parse_segment()
+        if not self.nextVid:
+            return "Error getting first segment"
         print("no")
 
     #Extracts movie list content from file into a list
@@ -74,7 +79,7 @@ class RunHandler:
         #self.mpdPath = ''
         try:
             self.Qbuf = QBuffer(self.mpdPath)
-            return True
+            return True, "Sucess"
         except:
             print("Failed to get QBuffer object")
             return False, "Failed to get QBuffer object"
@@ -88,6 +93,7 @@ class RunHandler:
     #POST: path to next chunks(dir), Startindex, endindex, quality
     def parse_segment(self):
         segment = self.Qbuf.next_segment()
+        print(f'Segment from handler = {segment}')
         self.nextSegment = segment[0]
         print(self.nextSegment)
         vidPath = self.mpdPath.replace("dash.mpd", "")
@@ -121,9 +127,10 @@ class RunHandler:
 
     #Used by the videoplayer to get next .mp4 path
     def get_next_segment(self):
-        newSegment = self.nextSegment
-        self.nextSegment = self.parse_segment()
-        if not self.nextSegment: print("newSegment: " + newSegment + " ,Error in nextSegment")
+        newSegment = self.nextVid
+        self.nextVid = self.parse_segment()
+        if not self.nextVid:
+             print("newSegment: " + newSegment + " ,Error in nextSegment")
         return newSegment
     #PRE:
     #POST:
