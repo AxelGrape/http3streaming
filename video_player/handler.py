@@ -1,7 +1,12 @@
 import os
+from parser.parse_mpd import MPDParser
+from mpegdash.nodes import MPEGDASH
 from decoder.decoder_interface import decode_segment
 from client.client_interface import request_file, request_movie_list, custom_request
 from qbuffer import QBuffer
+import queue
+import threading
+import subprocess
 
 class RunHandler:
 
@@ -11,14 +16,18 @@ class RunHandler:
         self.mpdPath = None
         self.Qbuf = None
         self.nextSegment = None
+        self.pause_cond = threading.Lock()
+        self.thread = threading.Thread(target=self.queue_handler)
+        self.stop = threading.Event()
         print(self.hitIt(filename))
+        self.thread.start()
         print("no")
 
 
     def hitIt(self,filename):
         self.mpdPath = self.request_mpd(filename)
         if not self.mpdPath: return "Error getting mpdPath in : request_mpd("+filename+")"
-        tmp = self.init_QBuffer()
+        tmp = self.init_Obj()
         if not tmp[0]: return tmp
         self.nextSegment = self.parse_segment()
         if not self.nextSegment: return "Error getting first segment"
@@ -70,10 +79,11 @@ class RunHandler:
 
     #PRE: Path to downloaded .mpd file
     #POST: parser object
-    def init_QBuffer(self):
+    def init_Obj(self):
         #self.mpdPath = ''
         try:
-            self.Qbuf = QBuffer(self.mpdPath)
+            self.parsObj = MPDParser(self.mpdPath)
+            self.Qbuf = queue.Queue(int(self.parsObj.get_buffer_time()))
             return True
         except:
             print("Failed to get QBuffer object")
@@ -81,15 +91,21 @@ class RunHandler:
 
 
     def get_segment_length(self):
-        return self.parsedObj.get_segment_duration(self.nextSegment)
+        result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
+                                "format=duration", "-of",
+                                "default=noprint_wrappers=1:nokey=1", self.filename],
+            stdout = subprocess.PIPE,
+            stderr = subprocess.STDOUT)
+        return float(result.stdout)
+            
 
 
     #PRE: parser object
     #POST: path to next chunks(dir), Startindex, endindex, quality
     def parse_segment(self):
-        segment = self.Qbuf.next_segment()
-        self.nextSegment = segment[0]
-        print(self.nextSegment)
+        q = 0
+        segment = self.parsObj.get_next_segment(q)
+        print(segment[0])
         vidPath = self.mpdPath.replace("dash.mpd", "")
         try:
             index = segment[0][-9:-4]
@@ -104,7 +120,10 @@ class RunHandler:
         request_file(f'{self.title}/{segment[0]}', vidPath)
         request_file(f'{self.title}/{segment[1]}', vidPath)
 
-        return self.decode_segments(vidPath, index, index, quality)
+        decodedSeg = self.decode_segments(vidPath, index, index, quality)
+        self.Qbuf.put(decodedSeg)
+        
+
 
 
 
@@ -121,20 +140,29 @@ class RunHandler:
 
     #Used by the videoplayer to get next .mp4 path
     def get_next_segment(self):
-        newSegment = self.nextSegment
-        self.nextSegment = self.parse_segment()
-        if not self.nextSegment: print("newSegment: " + newSegment + " ,Error in nextSegment")
+        newSegment = self.Qbuf.get() 
+        self.thread.release()
         return newSegment
+
     #PRE:
     #POST:
     #decides when new segments(chunks) should be sent to videoplayer
     def queue_handler(self):
+        while self.stop.is_set():
+            with self.pause_cond:
+                if not self.QBuf.full():
+                    self.parse_segment()
+                    
+                else:
+                    print('not full')
+                    self.pause_cond.acquire() #remember to call release in mediaplayer
+
         print("no")
 
 
 
 def main():
-    Handler = RunHandler()
+    Handler = RunHandler('nature')
     #print("hej")
     #p = MPDParser('/home/benjamin/Desktop/DVAE08/http3streaming/video_player/vid/nature/dash.mpd')
     #a = p.get_next_segment(0)
