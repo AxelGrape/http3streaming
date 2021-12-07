@@ -29,8 +29,8 @@ class RunHandler:
         if not self.mpdPath: return "Error getting mpdPath in : request_mpd("+filename+")"
         tmp = self.init_Obj()
         if not tmp[0]: return tmp
-        self.nextSegment = self.parse_segment()
-        if not self.nextSegment: return "Error getting first segment"
+        #self.parse_segment()
+        #if not self.nextSegment: return "Error getting first segment"
         print("no")
 
     #Extracts movie list content from file into a list
@@ -93,7 +93,7 @@ class RunHandler:
     def get_segment_length(self):
         result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
                                 "format=duration", "-of",
-                                "default=noprint_wrappers=1:nokey=1", self.filename],
+                                "default=noprint_wrappers=1:nokey=1", self.nextSegment],
             stdout = subprocess.PIPE,
             stderr = subprocess.STDOUT)
         return float(result.stdout)
@@ -120,10 +120,9 @@ class RunHandler:
         request_file(f'{self.title}/{segment[0]}', vidPath)
         request_file(f'{self.title}/{segment[1]}', vidPath)
 
-        decodedSeg = self.decode_segments(vidPath, index, index, quality)
-        self.Qbuf.put(decodedSeg)
+        self.nextSegment = self.decode_segments(vidPath, index, index, quality)
+        self.Qbuf.put(self.nextSegment)
         
-
 
 
 
