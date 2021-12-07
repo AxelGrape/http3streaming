@@ -1,5 +1,4 @@
 from mpegdash.parser import MPEGDASHParser
-import math
 
 """
 
@@ -59,9 +58,7 @@ class MPDParser():
         return tot
 
 
-    # Extract the file names of a representation
-    # Start: index of the first file
-    # Duration: amount of seconds that should be retrieved
+    # Helper function
     def __get_file(self, temp_file):
         chunk_number = "%05d" % self.next_segment
         _file = temp_file.replace("$Number%05d$", chunk_number)
@@ -177,4 +174,3 @@ class MPDParser():
         else:
             return False
         return chunks
-    

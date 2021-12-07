@@ -1,5 +1,6 @@
 import threading
 import sys
+#import time
 from parser.parse_mpd import MPDParser
 
 
@@ -14,7 +15,8 @@ class QBuffer():
         self.thread = threading.Thread(target=self.fill_buffer, args=(0,))
         self.thread.start()
 
-
+    
+    # Returns the current amount of time in the buffer (in seconds)
     def current_buffer_time(self):
         sum = 0
         for i in range(len(self.buffer)):
@@ -23,6 +25,7 @@ class QBuffer():
         return sum
 
 
+    # Used by the thread to keep the buffer filled
     def fill_buffer(self, adaptation_set):
         min_buffer_time = self.mpd.get_buffer_time()
         while not self.kill.is_set():
@@ -31,21 +34,40 @@ class QBuffer():
                     self.buffer.append(self.mpd.get_next_segment(adaptation_set))
                 self.pause_cond.acquire()
 
-
+    
+    # Return the next segment from the buffer and removes it from the buffer
     def next_segment(self):
         try:
-            return self.buffer.pop(0)
+            s = self.buffer.pop(0)
+            self.pause_cond.release()
+            return s
         except IndexError:
+            print("Error: Buffer is empty")
             return None
 
+    
+    # Return the duration of a segment
+    # Takes the name or the index of the segment as input
+    def segment_duration(self, segment):
+        if type(semgnet) == str:
+            return self.mpd.get_segment_duration(segment)
+        elif type(segment) == int:
+            try:
+                return self.mpd.get_segment_duration(self.buffer[segment][0])
+            except IndexError as e:
+                print("Error: {}".format(e))
+
+
+    # Appends a segment to the buffer (append a media file and an audio file as a tuple)
     def add_segment(self, segment):
         self.buffer.append(segment)
 
 
+    # Removes a segment from the buffer. Can take the index of a segment or the file name of a segment
     def remove_segment(self, segment = None):
         try:
             if type(segment) == int:
-                    del self.buffer[segment]
+                del self.buffer[segment]
             else:
                 if segment == None:
                     del self.buffer[0]
@@ -58,6 +80,7 @@ class QBuffer():
             print("Error: Something went wrong")
 
 
+    # Kills the thread, stops filling the buffer
     def end_thread(self):
         self.kill.set()
         self.pause_cond.release()
@@ -65,14 +88,22 @@ class QBuffer():
 
 """
 if __name__ == '__main__':
-    #parser = MPDParser('../server/Encoder/var/media/nature/dash.mpd')
     qbuf = QBuffer('../server/Encoder/var/media/nature/dash.mpd')
     
-    print("Buffer: {}".format(qbuf.buffer))
-    print("Next segment: {}".format(qbuf.next_segment()))
-    print("Buffer: {}".format(qbuf.buffer))
-    print("Next segment: {}".format(qbuf.next_segment()))
-    print("Next segment: {}".format(qbuf.next_segment()))
+    print(f"Buffer: {qbuf.buffer}")
+    print(f"Next segment: {qbuf.next_segment()}")
+    time.sleep(2)
+
+    print(f"\nBuffer: {qbuf.buffer}")
+    print(f"Next segment: {qbuf.next_segment()}")
+    time.sleep(2)
+
+    print(f"\nBuffer: {qbuf.buffer}")
+    print(f"Next segment: {qbuf.next_segment()}")
+    time.sleep(2)
+
+    print(f"\nBuffer: {qbuf.buffer}")
+    
     qbuf.end_thread()
 
     if qbuf.kill.is_set():
