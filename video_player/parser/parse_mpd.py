@@ -65,7 +65,7 @@ class MPDParser():
         return _file
 
 
-    # Returns the duration of a segment in seconds
+    # Returns the duration of a chunk in seconds (m4s file)
     def get_segment_duration(self, segment_file: str):
         if segment_file.endswith('.m4s'):
             index = int(segment_file[-9:-4])
@@ -78,13 +78,10 @@ class MPDParser():
         ss = template.segment_timelines[0].Ss
 
         count = 0
-
         for i, value in enumerate(ss):
             count += 1
-
             if value.r != None:
                 count += value.r
-
             if count >= index:
                 return ss[i].d / template.timescale
 
@@ -106,7 +103,7 @@ class MPDParser():
 
 
     # Returns minimum buffer time in seconds
-    def get_buffer_time(self):
+    def get_min_buffer_time(self):
         if self.mpd.min_buffer_time is not None:
             return self._parse_time(self.mpd.min_buffer_time)
         else:
@@ -114,63 +111,68 @@ class MPDParser():
 
     
     # Return a tuple of media and audio chunks (media, audio)
-    def get_next_segment(self, representation_id: int):
-        segments = self.representation_chunks(representation_id)
-        if segments != False:
-            return segments["media"], segments["audio"]
-        return False
+    def get_next_segment(self, adaptation_set: int = None, bandwidth = 0):
+        if adaptation_set is not None:
+            segments = self.representation_chunks(adaptation_set)
+            if segments != False:
+                return segments["media"], segments["audio"]
+            return False
+        else:
+            for adaptation in self.mpd.periods[0].adaptation_sets:
+                if adaptation.content_type == "video":
+                    for representation in adaptation.representations:
+                        if bandwidth >= representation.bandwidth:
+                            segments = self.representation_chunks(int(representation.id))
+                            if segments is not False:
+                                return segments["media"], segments["audio"]
+                            return False
+            
+            segments = self.representation_chunks(int(self.mpd.periods[0].adaptation_sets[-2].id))
+            if segments is not False:
+                return segments["media"], segments["audio"]
+            return False
 
 
     # Return a tuple of init files: (media, audio)
-    def init_chunk(self, representation_id):
+    def init_chunk(self, adaptation_set):
         try:
-            video_adaptation = self.mpd.periods[0].adaptation_sets[representation_id]
-            audio_adaptation = self.mpd.periods[0].adaptation_sets[representation_id + 1]
+            video_adaptation = self.mpd.periods[0].adaptation_sets[adaptation_set]
+            audio_adaptation = self.mpd.periods[0].adaptation_sets[adaptation_set + 1]
         except IndexError:
-            print("Error: Quality {} is not available".format(representation_id))
+            print(f"Error: Qualities {adaptation_set} and {adaptation_set + 1} are not available")
             return
         except:
             print("Something went wrong ;(")
             return
 
-        init_media = video_adaptation.representations[0].segment_templates[0].initialization.replace("$RepresentationID$", str(representation_id))
-        init_audio = audio_adaptation.representations[0].segment_templates[0].initialization.replace("$RepresentationID$", str(representation_id + 1))
+        init_media = video_adaptation.representations[0].segment_templates[0].initialization.replace("$RepresentationID$", str(adaptation_set))
+        init_audio = audio_adaptation.representations[0].segment_templates[0].initialization.replace("$RepresentationID$", str(adaptation_set + 1))
         return init_media, init_audio
 
 
     # Get data from a specific representation and start time (timescale format)
     # Returns a dictionary with media and audio files
-    def representation_chunks(self, representation_id):
+    def representation_chunks(self, adaptation_set):
         chunks = {}
         try:
-            video_adaptation = self.mpd.periods[0].adaptation_sets[representation_id]
-            audio_adaptation = self.mpd.periods[0].adaptation_sets[representation_id + 1]
+            adaptation = self.mpd.periods[0].adaptation_sets[adaptation_set]
         except IndexError as error:
-            print("Error: Quality {} is not available".format(representation_id))
+            print("Error: Quality {} is not available".format(adaptation_set))
             return
         except:
             print("Something went wrong ;(")
             return
 
         # Get media chunks
-        for media_segment in video_adaptation.representations[0].segment_templates:
+        for segment in adaptation.representations[0].segment_templates:
             # Get the media file name from the mpd file
             # Replace $RepresentationID$ with the actual representation id
-            temp_media_file = media_segment.media.replace("$RepresentationID$", str(representation_id))
+            temp_media_file = segment.media.replace("$RepresentationID$", str(adaptation_set))
+            temp_audio_file = segment.media.replace("$RepresentationID$", str(adaptation_set + 1))
 
             # Replace $Number%05d$ with the correct file chunk number
-            for media_timeline in media_segment.segment_timelines:
+            for timeline in segment.segment_timelines:
                 chunks["media"] = self.__get_file(temp_media_file)
-
-
-        # Get audio chunks
-        for audio_segment in audio_adaptation.representations[0].segment_templates:
-            # Get the media file name from the mpd file
-            # Replace $RepresentationID$ with the actual representation id
-            temp_audio_file = audio_segment.media.replace("$RepresentationID$", str(representation_id + 1))
-            
-            # Replace $Number%05d$ with the correct file chunk number
-            for audio_timeline in audio_segment.segment_timelines:
                 chunks["audio"] = self.__get_file(temp_audio_file)
 
         if self.next_segment < self.amount_of_segments() + 1:
