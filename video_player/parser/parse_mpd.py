@@ -128,8 +128,10 @@ class MPDParser():
             audio_adaptation = self.mpd.periods[0].adaptation_sets[representation_id + 1]
         except IndexError:
             print("Error: Quality {} is not available".format(representation_id))
+            return
         except:
             print("Something went wrong ;(")
+            return
 
         init_media = video_adaptation.representations[0].segment_templates[0].initialization.replace("$RepresentationID$", str(representation_id))
         init_audio = audio_adaptation.representations[0].segment_templates[0].initialization.replace("$RepresentationID$", str(representation_id + 1))
@@ -145,8 +147,10 @@ class MPDParser():
             audio_adaptation = self.mpd.periods[0].adaptation_sets[representation_id + 1]
         except IndexError as error:
             print("Error: Quality {} is not available".format(representation_id))
+            return
         except:
             print("Something went wrong ;(")
+            return
 
         # Get media chunks
         for media_segment in video_adaptation.representations[0].segment_templates:

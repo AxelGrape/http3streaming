@@ -31,7 +31,11 @@ class QBuffer():
         while not self.kill.is_set():
             with self.pause_cond:
                 while self.current_buffer_time() < min_buffer_time:
-                    self.buffer.append(self.mpd.get_next_segment(adaptation_set))
+                    s = self.mpd.get_next_segment(adaptation_set)
+                    if s:
+                        self.buffer.append(s)
+                    else:
+                        break
                 self.pause_cond.acquire()
 
     
@@ -43,7 +47,7 @@ class QBuffer():
             return s
         except IndexError:
             print("Error: Buffer is empty")
-            return None
+            return False
 
     
     # Return the duration of a segment
@@ -90,20 +94,12 @@ class QBuffer():
 if __name__ == '__main__':
     qbuf = QBuffer('../server/Encoder/var/media/nature/dash.mpd')
     
-    print(f"Buffer: {qbuf.buffer}")
-    print(f"Next segment: {qbuf.next_segment()}")
-    time.sleep(2)
+    for x in range(40):
+        print(f"Buffer: {qbuf.buffer}")
+        print(f"Next segment: {qbuf.next_segment()}")
+        print("-"*50)
+        time.sleep(.01)
 
-    print(f"\nBuffer: {qbuf.buffer}")
-    print(f"Next segment: {qbuf.next_segment()}")
-    time.sleep(2)
-
-    print(f"\nBuffer: {qbuf.buffer}")
-    print(f"Next segment: {qbuf.next_segment()}")
-    time.sleep(2)
-
-    print(f"\nBuffer: {qbuf.buffer}")
-    
     qbuf.end_thread()
 
     if qbuf.kill.is_set():
