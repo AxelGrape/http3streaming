@@ -99,7 +99,7 @@ class Window(QWidget):
                 print(segment)
                 self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment)))
                 self.mediaPlayer.play()
-                time.sleep(8.3)
+                time.sleep(benjamin_hanterar.get_segment_length())
 
 
             print(f'This is our segment: {segment}')
