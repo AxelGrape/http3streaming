@@ -14,6 +14,7 @@ cp proxygen/proxygen/_build/proxygen/httpserver/samples/team video_player/
 ```
 sudo apt install ffmpeg
 sudo apt-get install --reinstall libxcb-xinerama0
+sudo apt-get install ubuntu-restricted-extras
 ```
 
 ### Install python 3.8.10 and needed libraries
