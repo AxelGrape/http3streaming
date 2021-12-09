@@ -33,6 +33,6 @@ Siri Nordquist <br>
 Simon Tham <br>
 
 ./team --mode=server -static_root=/home/http3team/ --port=8080 --h2port=8080 --protocol=h3-27
-
+qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found. |||Lösning->>|||sudo apt-get install --reinstall libxcb-xinerama0
 
 
