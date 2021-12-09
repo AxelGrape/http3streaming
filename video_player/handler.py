@@ -140,21 +140,26 @@ class RunHandler:
 
     #Used by the videoplayer to get next .mp4 path
     def get_next_segment(self):
-        newSegment = self.Qbuf.get() 
         print("getting next segment")
-        self.thread.release()
+        newSegment = self.Qbuf.get()
+        if not newSegment:
+            print("get_next_segment ERROR: no newSegment") 
+        if self.pause_cond.locked:
+            print("lock locked, releasing lock")
+            self.pause_cond.release()
         return newSegment
 
     #PRE:
     #POST:
     #decides when new segments(chunks) should be sent to videoplayer
     def queue_handler(self):
+        if self.pause_cond.locked:
+            self.pause_cond.release
         while not self.stop.is_set():
             with self.pause_cond:
                 if not self.Qbuf.full():
                     self.parse_segment()
                     print("In queue handler")
-                    
                 else:
                     print('Full queue: ', self.Qbuf)
                     self.pause_cond.acquire() #remember to call release in mediaplayer

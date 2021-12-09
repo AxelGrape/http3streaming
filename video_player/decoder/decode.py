@@ -50,7 +50,7 @@ def decoder(path, si, ei, quality, file_name):
                 return False, f'chunk creation failed: {c}'
 
         #copy and merge complete audio and video .m4s files into one .mp4 file with ffmpeg into output directory
-        subprocess.run("ffmpeg -i " + output_directory + "/all" + quality + ".m4s -i " + output_directory + "/all" + quality1 + ".m4s -c:v copy -c:a aac " + output_directory + "/vid" + ei + ".mp4", shell = True, check = True)
+        subprocess.run("ffmpeg -i " + output_directory + "/all" + quality + ".m4s -i " + output_directory + "/all" + quality1 + ".m4s -c:v copy -c:a aac " + output_directory + "/vid" + ei + ".mp4 -hide_banner -loglevel error", shell = True, check = True)
 
         #removes temporary .m4s files
         subprocess.run("rm " + output_directory + "/*.m4s" , shell = True, check = True)
