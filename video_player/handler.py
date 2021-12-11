@@ -17,6 +17,7 @@ class RunHandler:
         self.mpdPath = None
         self.Qbuf = None
         self.nextSegment = None
+        self.newSegment = None
         self.pause_cond = threading.Lock()
         self.thread = threading.Thread(target=self.queue_handler)
         #self.thread.daemon = True
@@ -85,7 +86,12 @@ class RunHandler:
         #self.mpdPath = ''
         try:
             self.parsObj = MPDParser(self.mpdPath)
-            self.Qbuf = queue.Queue(int(self.parsObj.get_min_buffer_time()))
+            size = int(self.parsObj.get_min_buffer_time()/2)
+
+            if self.parsObj.amount_of_segments() < size:
+                size = self.parsObj.amount_of_segments()
+            self.Qbuf = queue.Queue(size)
+
             return True, ""
         except:
             print(type(self.Qbuf), type(self.parsObj), "Failed to get QBuffer object")
@@ -95,11 +101,11 @@ class RunHandler:
     def get_segment_length(self):
         result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
                                 "format=duration", "-of",
-                                "default=noprint_wrappers=1:nokey=1", self.nextSegment],
+                                "default=noprint_wrappers=1:nokey=1", self.newSegment],
             stdout = subprocess.PIPE,
             stderr = subprocess.STDOUT)
         return float(result.stdout)
-            
+
 
 
     #PRE: parser object
@@ -107,24 +113,28 @@ class RunHandler:
     def parse_segment(self):
         q = 0
         segment = self.parsObj.get_next_segment(q)
-        print(segment[0])
-        vidPath = self.mpdPath.replace("dash.mpd", "")
-        try:
-            index = segment[0][-9:-4]
-            quality = segment[0][-11:-10]
-        except:
-            print("wops")
+        if(segment is not False):
+            vidPath = self.mpdPath.replace("dash.mpd", "")
+            try:
+                index = segment[0][-9:-4]
+                quality = segment[0][-11:-10]
+            except:
+                print("wops")
 
-        print(index)
-        print(quality)
-        print(vidPath)
-        print("In parse segment", self.title, index)
-        request_file(f'{self.title}/{segment[0]}', vidPath)
-        request_file(f'{self.title}/{segment[1]}', vidPath)
+            #print(index)
+            #print(quality)
+            #print(vidPath)
+            #print("In parse segment", self.title, index)
+            request_file(f'{self.title}/{segment[0]}', vidPath)
+            request_file(f'{self.title}/{segment[1]}', vidPath)
 
-        self.nextSegment = self.decode_segments(vidPath, index, index, quality)
+            self.nextSegment = self.decode_segments(vidPath, index, index, quality)
+        else:
+            self.nextSegment = False
+            self.killthread()
+
         self.Qbuf.put(self.nextSegment)
-        
+
 
 
 
@@ -142,13 +152,13 @@ class RunHandler:
     #Used by the videoplayer to get next .mp4 path
     def get_next_segment(self):
         print("getting next segment")
-        newSegment = self.Qbuf.get()
-        if not newSegment:
-            print("get_next_segment ERROR: no newSegment") 
-        if self.pause_cond.locked():
+        self.newSegment = self.Qbuf.get()
+        if not self.newSegment:
+            print("get_next_segment ERROR: no newSegment")
+        """if self.pause_cond.locked:
             print("lock locked, releasing lock")
-            self.pause_cond.release()
-        return newSegment
+            self.pause_cond.release()"""
+        return self.newSegment
 
     #PRE:
     #POST:
@@ -160,16 +170,15 @@ class RunHandler:
             with self.pause_cond:
                 while not self.Qbuf.full():
                     self.parse_segment()
-                    print("In queue handler")
-                
-                print('Full queue: ', self.Qbuf)
+                    #print("In queue handler")
                 self.pause_cond.acquire() #remember to call release in mediaplayer
 
         print("Queue handler exit")
 
     def killthread(self):
         self.stop.set()
-        self.pause_cond.release()
+        if(self.pause_cond.locked()):
+            self.pause_cond.release()
         print("killing thread")
 
 

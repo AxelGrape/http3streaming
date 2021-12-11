@@ -94,12 +94,16 @@ class Window(QWidget):
             print(f'path = {path.split("/")[-1]}')
             benjamin_hanterar = RunHandler(path.split("/")[-1])
 
+
             while(True):
                 segment = benjamin_hanterar.get_next_segment()
-                print(segment)
+                print("*******************************")
+                print("segment is ", segment)
+                #print(segment, "length is : ",benjamin_hanterar.get_segment_length())
+                print("********************************")
                 self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment)))
                 self.mediaPlayer.play()
-                time.sleep(benjamin_hanterar.get_segment_length() - 2)
+                time.sleep(benjamin_hanterar.get_segment_length())
 
 
             print(f'This is our segment: {segment}')

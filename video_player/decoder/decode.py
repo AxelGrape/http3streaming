@@ -23,9 +23,9 @@ def decoder(path, si, ei, quality, file_name):
 
     #Clear output directory. If already empty, print exception and continue.
     try:
-        subprocess.run("rm " + output_directory + "/all*", shell = True, check = True)
+        subprocess.run("rm " + output_directory + "/all*", shell = True, check = True, stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        print("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
+        hola = "command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output)
 
     #Check if init files exist, if not then return with False
     if(os.path.isfile(path + "/dash_init_" + quality + ".m4s") & os.path.isfile(path + "/dash_init_" + quality1 + ".m4s")):
@@ -39,7 +39,7 @@ def decoder(path, si, ei, quality, file_name):
         #for each chunk between start-index and end-index: append their content to the temporary .m4s file created above in the output directory.
         for c in chnks:
             if(os.path.isfile(path + "/dash_chunk_" + quality + "_"+str(c)+".m4s") & os.path.isfile(path + "/dash_chunk_" + quality1 + "_"+str(c)+".m4s")):
-                print(f'c is {c}')
+                #print(f'c is {c}')
                 try:
                     subprocess.run( "cat $(ls -vx " + path + "/dash_chunk_" + quality + "_"+str(c)+".m4s) >> " + output_directory + "/all" + quality + ".m4s", shell = True, check = True)
                     subprocess.run( "cat $(ls -vx " + path + "/dash_chunk_" + quality1 + "_"+str(c)+".m4s) >> " + output_directory + "/all" + quality1 + ".m4s", shell = True, check = True)
@@ -53,7 +53,7 @@ def decoder(path, si, ei, quality, file_name):
         subprocess.run("ffmpeg -i " + output_directory + "/all" + quality + ".m4s -i " + output_directory + "/all" + quality1 + ".m4s -c:v copy -c:a aac " + output_directory + "/vid" + ei + ".mp4 -hide_banner -loglevel error", shell = True, check = True)
 
         #removes temporary .m4s files
-        subprocess.run("rm " + output_directory + "/*.m4s" , shell = True, check = True)
+        subprocess.run("rm " + output_directory + "/*.m4s" , shell = True, check = True, stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
 
         return True, output_directory + "/vid" + ei + ".mp4"
 
