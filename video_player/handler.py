@@ -145,9 +145,9 @@ class RunHandler:
         newSegment = self.Qbuf.get()
         if not newSegment:
             print("get_next_segment ERROR: no newSegment") 
-        """if self.pause_cond.locked:
+        if self.pause_cond.locked():
             print("lock locked, releasing lock")
-            self.pause_cond.release()"""
+            self.pause_cond.release()
         return newSegment
 
     #PRE:
@@ -157,14 +157,13 @@ class RunHandler:
         #if self.pause_cond.locked:
             #self.pause_cond.release
         while not self.stop.is_set():
-            #with self.pause_cond:
-            if not self.Qbuf.full():
-                self.parse_segment()
-                print("In queue handler")
-            else:
+            with self.pause_cond:
+                while not self.Qbuf.full():
+                    self.parse_segment()
+                    print("In queue handler")
+                
                 print('Full queue: ', self.Qbuf)
-                time.sleep(4)
-            #    self.pause_cond.acquire() #remember to call release in mediaplayer
+                self.pause_cond.acquire() #remember to call release in mediaplayer
 
         print("Queue handler exit")
 
