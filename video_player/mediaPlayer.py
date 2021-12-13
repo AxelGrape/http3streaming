@@ -116,13 +116,10 @@ class Window(QWidget):
                 segment = benjamin_hanterar.get_next_segment()
                 if(segment is False):
                     movie_active = False
-                    time.sleep(5)
+                    benjamin_hanterar.print_throughput()
                     break
                 else:
-                    print("*******************************")
-                    print("segment is ", segment)
-                    #print(segment, "length is : ",benjamin_hanterar.get_segment_length())
-                    print("********************************")
+                    #print("segment is ", segment)
                     self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment)))
                     self.mediaPlayer.play()
                     time.sleep(benjamin_hanterar.get_segment_length())

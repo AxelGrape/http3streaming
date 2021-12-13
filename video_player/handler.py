@@ -3,11 +3,14 @@ from parser.parse_mpd import MPDParser
 from mpegdash.nodes import MPEGDASH
 from decoder.decoder_interface import decode_segment
 from client.client_interface import request_file, request_movie_list, custom_request
+from time import perf_counter
 #from qbuffer import QBuffer
 import queue
 import threading
 import subprocess
 import time
+import math
+from pathlib import Path
 
 class RunHandler:
 
@@ -19,8 +22,9 @@ class RunHandler:
         self.nextSegment = None
         self.newSegment = None
         self.pause_cond = threading.Lock()
-        self.thread = threading.Thread(target=self.queue_handler)
+        self.thread = threading.Thread(target=self.queue_handler, daemon=True)
         self.stop = threading.Event()
+        self.throughputList = []
         print(self.hitIt(filename))
         self.thread.start()
         print("Init done")
@@ -100,7 +104,7 @@ class RunHandler:
 
     def get_segment_length(self):
         return self.parsObj.get_segment_duration(self.newSegment)
-        
+
         """
         result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
                                 "format=duration", "-of",
@@ -110,11 +114,20 @@ class RunHandler:
         return float(result.stdout)
         """
 
+    def convert_size(self, size_bytes):
+       if size_bytes == 0:
+           return "0B"
+       size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+       i = int(math.floor(math.log(size_bytes, 1024)))
+       p = math.pow(1024, i)
+       s = round(size_bytes / p, 2)
+       return "%s %s" % (s, size_name[i])
 
     #PRE: parser object
     #POST: path to next chunks(dir), Startindex, endindex, quality
     def parse_segment(self):
         q = 0
+
         segment = self.parsObj.get_next_segment(q)
         print("Segment from parse_segment is ", segment)
         if(segment is not False):
@@ -124,15 +137,12 @@ class RunHandler:
                 quality = segment[0][-11:-10]
             except:
                 print("wops")
-
-            #print(index)
-            #print(quality)
-            #print(vidPath)
-            #print("In parse segment", self.title, index)
+            t1_start = perf_counter()
             request_file(f'{self.title}/{segment[0]}', vidPath)
+            t1_stop = perf_counter()
             request_file(f'{self.title}/{segment[1]}', vidPath)
-
-
+            #self.throughputList.append(self.convert_size((os.path.getsize(vidPath + segment[0]))/(t1_stop - t1_start)))
+            self.throughputList.append(os.path.getsize(vidPath + segment[0])/(t1_stop - t1_start))
             self.nextSegment = self.decode_segments(vidPath, index, index, quality)
         else:
             self.nextSegment = False
@@ -140,6 +150,12 @@ class RunHandler:
 
         self.Qbuf.put(self.nextSegment)
 
+
+    def print_throughput(self):
+        print("All throughputs :")
+        for t in self.throughputList:
+            print(self.convert_size(t))
+        print("Latest throughput: ", self.throughputList[-1])
 
 
     #PRE: path to next chunks(dir), Index of start and end chunk, quality
