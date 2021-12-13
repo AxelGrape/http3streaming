@@ -31,7 +31,7 @@ class MPDParser():
     def _parse_time(self, time):
         formatted_time = time.replace("PT", "").replace("H", ":").replace("M", ":").replace("S", "")
         temp = formatted_time.split(":")
-        
+
         if len(temp) == 1:
             return float(temp[0])
         elif len(temp) == 2:
@@ -44,18 +44,15 @@ class MPDParser():
     def amount_of_segments(self):
         template = self.mpd.periods[0].adaptation_sets[0].representations[0].segment_templates[0]
         ss = template.segment_timelines[0].Ss
-        video_duration = self.get_presentation_duration() * template.timescale
         tot = 0
 
         for dur in ss:
-            tot += round(video_duration / dur.d)
+            tot += 1
             if dur.r is not None:
-                d = dur.d * (dur.r + 1)
-            else:
-                d = dur.d
-            video_duration -= d
+                tot += dur.r
 
         return tot
+
 
 
     # Helper function
@@ -109,7 +106,7 @@ class MPDParser():
         else:
             return None
 
-    
+
     # Return a tuple of media and audio chunks (media, audio)
     def get_next_segment(self, adaptation_set: int = None, bandwidth = 0):
         if adaptation_set is not None:
@@ -126,7 +123,7 @@ class MPDParser():
                             if segments is not False:
                                 return segments["media"], segments["audio"]
                             return False
-            
+
             segments = self.representation_chunks(int(self.mpd.periods[0].adaptation_sets[-2].id))
             if segments is not False:
                 return segments["media"], segments["audio"]

@@ -87,7 +87,6 @@ class RunHandler:
         try:
             self.parsObj = MPDParser(self.mpdPath)
             size = int(self.parsObj.get_min_buffer_time()/2)
-
             if self.parsObj.amount_of_segments() < size:
                 size = self.parsObj.amount_of_segments()
             self.Qbuf = queue.Queue(size)
@@ -113,6 +112,7 @@ class RunHandler:
     def parse_segment(self):
         q = 0
         segment = self.parsObj.get_next_segment(q)
+        print("Segment from parse_segment is ", segment)
         if(segment is not False):
             vidPath = self.mpdPath.replace("dash.mpd", "")
             try:
@@ -127,6 +127,7 @@ class RunHandler:
             #print("In parse segment", self.title, index)
             request_file(f'{self.title}/{segment[0]}', vidPath)
             request_file(f'{self.title}/{segment[1]}', vidPath)
+
 
             self.nextSegment = self.decode_segments(vidPath, index, index, quality)
         else:
@@ -155,9 +156,10 @@ class RunHandler:
         self.newSegment = self.Qbuf.get()
         if not self.newSegment:
             print("get_next_segment ERROR: no newSegment")
-        """if self.pause_cond.locked:
+        if self.pause_cond.locked():
             print("lock locked, releasing lock")
-            self.pause_cond.release()"""
+            self.pause_cond.release()
+        print("self.newSegment = ", self.newSegment)
         return self.newSegment
 
     #PRE:

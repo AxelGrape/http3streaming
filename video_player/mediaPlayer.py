@@ -110,17 +110,25 @@ class Window(QWidget):
             benjamin_hanterar = RunHandler(path.split("/")[-1])
 
 
-            while(True):
+            movie_active = True
+
+            while(movie_active):
                 segment = benjamin_hanterar.get_next_segment()
-                print("*******************************")
-                print("segment is ", segment)
-                #print(segment, "length is : ",benjamin_hanterar.get_segment_length())
-                print("********************************")
-                self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment)))
-                self.mediaPlayer.play()
-                time.sleep(benjamin_hanterar.get_segment_length())
+                if(segment is False):
+                    movie_active = False
+                    time.sleep(5)
+                    break
+                else:
+                    print("*******************************")
+                    print("segment is ", segment)
+                    #print(segment, "length is : ",benjamin_hanterar.get_segment_length())
+                    print("********************************")
+                    self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment)))
+                    self.mediaPlayer.play()
+                    time.sleep(benjamin_hanterar.get_segment_length())
 
             self.remove_folders()
+            print("filmen är färdiiiig")
             #self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile()))
             #self.mediaPlayer.play()
 
