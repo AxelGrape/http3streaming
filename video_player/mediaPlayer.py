@@ -5,7 +5,7 @@ from PyQt5.QtCore import Qt, QUrl
 from client.client_interface import request_movie_list, request_file
 from handler import RunHandler
 import sys
-import os
+import os, shutil
 import time
 from os.path import exists
 
@@ -82,11 +82,26 @@ class Window(QWidget):
     #    item = self.listwidget.currentItem()
         #print(item.text())
 
+
+    def remove_folders(self):
+        folder = os.getcwd() + '/vid/'
+        for filename in os.listdir(folder):
+            file_path = os.path.join(folder, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                print('Failed to delete %s. Reason: %s' % (file_path, e))
+
+
     def request_movie(self):
         item = self.listwidget.currentItem()
         if item is None:
             print("You must choose a movie from the list")
         else:
+            self.remove_folders()
             path = item.text()
             print(path.split("/")[-1])
             file_name = path.split("/")[-1] + "/" + path.split("/")[-1] + ".mp4"
@@ -105,8 +120,7 @@ class Window(QWidget):
                 self.mediaPlayer.play()
                 time.sleep(benjamin_hanterar.get_segment_length())
 
-
-            print(f'This is our segment: {segment}')
+            self.remove_folders()
             #self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile()))
             #self.mediaPlayer.play()
 
