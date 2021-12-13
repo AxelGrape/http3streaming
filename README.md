@@ -41,5 +41,5 @@ python3.8.10 video_player/mediaPlayer.py
 ### Server-side
 
 ```
-proxygen/proxygen/_build/proxygen/httpserver/samples/team --mode=server --static_root=/home/http3team/movies/ --host=130.243.27.204 (In our case)
+proxygen/proxygen/_build/proxygen/httpserver/team --mode=server --static_root=/home/http3team/movies/ --host=130.243.27.204 (In our case)
 ```
