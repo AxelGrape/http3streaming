@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QSlider, QStyle, QSizePolicy, QFileDialog, QListWidget, QGridLayout
-from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QMediaPlaylist
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl
 from client.client_interface import request_movie_list, request_file
@@ -17,13 +17,14 @@ class Window(QWidget):
 
         self.setWindowTitle("Media Player")
         self.setGeometry(350, 100, 700, 500)
-
+        self.benjamin_hanterar = None
         self.init_ui()
         self.show()
 
     def init_ui(self):
         # Create media player object
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
+        self.mediaPlaylist = QMediaPlaylist()
 
         # Create video widget object
         self.videoWidget = QVideoWidget()
@@ -107,9 +108,11 @@ class Window(QWidget):
             file_name = path.split("/")[-1] + "/" + path.split("/")[-1] + ".mp4"
             #request_file(file_name)
             print(f'path = {path.split("/")[-1]}')
-            benjamin_hanterar = RunHandler(path.split("/")[-1])
+            self.benjamin_hanterar = RunHandler(path.split("/")[-1])
+            self.set_playlist()
+            self.play_video()
 
-
+            """
             movie_active = True
 
             while(movie_active):
@@ -123,34 +126,19 @@ class Window(QWidget):
                     self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment)))
                     self.mediaPlayer.play()
                     time.sleep(benjamin_hanterar.get_segment_length())
-
-            self.remove_folders()
+            """
+            #self.remove_folders()
             print("filmen är färdiiiig")
             #self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile()))
             #self.mediaPlayer.play()
 
-#
-            #benjamin_hanterar = RunHandler()
-            #self.playBtn.setEnabled(True)
-            #benjamin_hanterar.request_mpd(path.split("/")[-1])
-            #benjamin_hanterar.parse_mpd()
-            #benjamin_hanterar.parse_segment()
-            #self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile("/home/axel/Documents/School/HT2021/DVAE08/http3streaming/video_player/vid/nature/out/vid00001.mp4")))
-            #self.mediaPlayer.play()
-            #benjamin_hanterar.parse_segment()
-            #time.sleep(benjamin_hanterar.get_segment_length())
-            #self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile("/home/axel/Documents/School/HT2021/DVAE08/http3streaming/video_player/vid/nature/out/vid00002.mp4")))
-            #self.mediaPlayer.play()
-            #benjamin_hanterar.parse_segment()
-            #time.sleep(benjamin_hanterar.get_segment_length())
-            #self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile("/home/axel/Documents/School/HT2021/DVAE08/http3streaming/video_player/vid/nature/out/vid00003.mp4")))
-            #self.mediaPlayer.play()
 
     def update_list_widget(self):
         self.listwidget.clear()
         for i, movie in enumerate(self.full_movie_list):
             self.listwidget.insertItem(i, movie)
 
+    
     def refresh_movie_list(self):
         pathy = os.getcwd() + "/list_movies"
         request_movie_list(os.getcwd())
@@ -165,6 +153,7 @@ class Window(QWidget):
             self.update_list_widget()
             os.remove(pathy)
 
+    
     def open_file(self):
         fileName, _ = QFileDialog.getOpenFileName(self, "Open Video")
 
@@ -174,10 +163,20 @@ class Window(QWidget):
 
 
     def play_video(self):
+        playback = self.add_media()
+        self.mediaPlayer.play()
+
+        while playback:
+            playback = self.add_media()
+            time.sleep(2)
+
+        """
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
             self.mediaPlayer.pause()
         else:
             self.mediaPlayer.play()
+        """
+
 
     def state_changed(self):
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
@@ -185,6 +184,7 @@ class Window(QWidget):
         else:
             self.playBtn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
 
+    
     def position_changed(self, time):
         self.slider.setValue(time)
 
@@ -197,10 +197,25 @@ class Window(QWidget):
         self.mediaPlayer.setPosition(position)
 
 
+    def set_playlist(self):
+        self.mediaPlayer.setPlaylist(self.mediaPlaylist)
+        self.mediaPlaylist.setCurrentIndex(0)
+
+
+    def add_media(self):
+        segment = self.benjamin_hanterar.get_next_segment()
+        if segment is not False:
+            media_content = QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment))
+            self.mediaPlaylist.addMedia(media_content)
+            return True
+        return False
+
+
 
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     player = Window()
+    player.remove_folders()
     sys.exit(app.exec_())

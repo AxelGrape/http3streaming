@@ -54,9 +54,9 @@ class MPDParser():
         return tot
 
 
-    def number_of_qualities(self):
+    def get_qualities(self):
         adaptations = []
-        for adaptation in self.mpd.periods[0]:
+        for adaptation in self.mpd.periods[0].adaptation_sets:
             adaptations.append(adaptation.id)
         return adaptations
 
@@ -152,6 +152,7 @@ class MPDParser():
     # Returns a dictionary with media and audio files
     def representation_chunks(self, adaptation_set):
         chunks = {}
+        print(f'Adaptation: {adaptation_set}')
         try:
             adaptation = self.mpd.periods[0].adaptation_sets[adaptation_set]
         except IndexError as error:

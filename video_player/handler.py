@@ -32,9 +32,15 @@ class RunHandler:
 
     def hitIt(self,filename):
         self.mpdPath = self.request_mpd(filename)
-        if not self.mpdPath: return "Error getting mpdPath in : request_mpd("+filename+")"
+        if not self.mpdPath:
+            return "Error getting mpdPath in : request_mpd("+filename+")"
+        
         tmp = self.init_Obj()
-        if not tmp[0]: return tmp
+        self.request_all_init_files(len(self.parsObj.get_qualities()))
+
+        if not tmp[0]:
+            return tmp
+
         #self.parse_segment()
         #if not self.nextSegment: return "Error getting first segment"
         print("hitit done")
@@ -69,7 +75,6 @@ class RunHandler:
         print(f'{mpdPath_isfile}   file is   {mpdPath}')
         if(mpdPath_isfile):
             print("MPD path exists")
-            self.request_all_init_files(8)
             return mpdPath
         else:
             print("Bad filename")
@@ -105,14 +110,6 @@ class RunHandler:
     def get_segment_length(self):
         return self.parsObj.get_segment_duration(self.newSegment)
 
-        """
-        result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
-                                "format=duration", "-of",
-                                "default=noprint_wrappers=1:nokey=1", self.newSegment],
-            stdout = subprocess.PIPE,
-            stderr = subprocess.STDOUT)
-        return float(result.stdout)
-        """
 
     def convert_size(self, size_bytes):
        if size_bytes == 0:
@@ -123,13 +120,16 @@ class RunHandler:
        s = round(size_bytes / p, 2)
        return "%s %s" % (s, size_name[i])
 
+
     #PRE: parser object
     #POST: path to next chunks(dir), Startindex, endindex, quality
     def parse_segment(self):
         q = 0
+        if len(self.throughputList) > 0:
+            q = self.throughputList[-1]
+        segment = self.parsObj.get_next_segment(bandwidth=q)
+        print(f"Segment from parse_segment is {segment}")
 
-        segment = self.parsObj.get_next_segment(q)
-        print("Segment from parse_segment is ", segment)
         if(segment is not False):
             vidPath = self.mpdPath.replace("dash.mpd", "")
             try:
@@ -173,7 +173,7 @@ class RunHandler:
     #Used by the videoplayer to get next .mp4 path
     def get_next_segment(self):
         print("getting next segment")
-        self.newSegment = self.Qbuf.get()
+        self.newSegment = self.Qbuf.get(timeout = 1)
         if not self.newSegment:
             print("get_next_segment ERROR: no newSegment")
         if self.pause_cond.locked():
