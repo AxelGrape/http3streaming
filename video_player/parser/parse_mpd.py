@@ -54,6 +54,12 @@ class MPDParser():
         return tot
 
 
+    def number_of_qualities(self):
+        adaptations = []
+        for adaptation in self.mpd.periods[0]:
+            adaptations.append(adaptation.id)
+        return adaptations
+
 
     # Helper function
     def __get_file(self, temp_file):
@@ -63,15 +69,10 @@ class MPDParser():
 
 
     # Returns the duration of a chunk in seconds (m4s file)
-    def get_segment_duration(self, segment_file: str):
-        if segment_file.endswith('.m4s'):
-            index = int(segment_file[-9:-4])
-            repr_id = int(segment_file[-11])
-        else:
-            index = int(segment_file[-5::])
-            repr_id = int(segment_file[-7])
+    def get_segment_duration(self, file: str):
+        index = int(file[-5])
 
-        template = self.mpd.periods[0].adaptation_sets[repr_id].representations[0].segment_templates[0]
+        template = self.mpd.periods[0].adaptation_sets[0].representations[0].segment_templates[0]
         ss = template.segment_timelines[0].Ss
 
         count = 0

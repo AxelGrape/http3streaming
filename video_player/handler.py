@@ -3,7 +3,7 @@ from parser.parse_mpd import MPDParser
 from mpegdash.nodes import MPEGDASH
 from decoder.decoder_interface import decode_segment
 from client.client_interface import request_file, request_movie_list, custom_request
-from qbuffer import QBuffer
+#from qbuffer import QBuffer
 import queue
 import threading
 import subprocess
@@ -20,7 +20,6 @@ class RunHandler:
         self.newSegment = None
         self.pause_cond = threading.Lock()
         self.thread = threading.Thread(target=self.queue_handler)
-        #self.thread.daemon = True
         self.stop = threading.Event()
         print(self.hitIt(filename))
         self.thread.start()
@@ -48,6 +47,7 @@ class RunHandler:
                 movieList.append(line)
         return movieList
 
+
     #request mpd file from client
     #triggered from videoplayer
     #get .mpd file back
@@ -71,6 +71,7 @@ class RunHandler:
             print("Bad filename")
             return False
             #return False + 'Problem with downloading mpd' #prata med aksel och sitri
+
 
     def request_all_init_files(self, quality_count):
         directory_name = self.title
@@ -98,13 +99,16 @@ class RunHandler:
 
 
     def get_segment_length(self):
+        return self.parsObj.get_segment_duration(self.newSegment)
+        
+        """
         result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
                                 "format=duration", "-of",
                                 "default=noprint_wrappers=1:nokey=1", self.newSegment],
             stdout = subprocess.PIPE,
             stderr = subprocess.STDOUT)
         return float(result.stdout)
-
+        """
 
 
     #PRE: parser object
@@ -138,7 +142,6 @@ class RunHandler:
 
 
 
-
     #PRE: path to next chunks(dir), Index of start and end chunk, quality
     #POST: path to .mp4 file
     def decode_segments(self, path, si, ei, q):
@@ -149,6 +152,7 @@ class RunHandler:
         else:
             return False, mp4Path
             #handle fault stuff
+
 
     #Used by the videoplayer to get next .mp4 path
     def get_next_segment(self):
@@ -166,22 +170,34 @@ class RunHandler:
     #POST:
     #decides when new segments(chunks) should be sent to videoplayer
     def queue_handler(self):
-        #if self.pause_cond.locked:
-            #self.pause_cond.release
         while not self.stop.is_set():
             with self.pause_cond:
                 while not self.Qbuf.full():
                     self.parse_segment()
                     #print("In queue handler")
-                self.pause_cond.acquire() #remember to call release in mediaplayer
+                self.pause_cond.acquire()
 
         print("Queue handler exit")
 
+
+    # Return the total time currently in the queue
+    def queue_time(self):
+        time = 0
+        q = list(self.Qbuf.queue)
+        for item in q:
+            if item is not False:
+                time += self.parsObj.get_segment_duration(item)
+        return time
+
+
+    # Kill the thread. Stops filling the buffer
     def killthread(self):
         self.stop.set()
         if(self.pause_cond.locked()):
             self.pause_cond.release()
-        print("killing thread")
+            print("killing thread")
+
+
 
 
 def main():
