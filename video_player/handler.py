@@ -22,11 +22,11 @@ class RunHandler:
         self.nextSegment = None
         self.newSegment = None
         self.pause_cond = threading.Lock()
-        self.thread = threading.Thread(target=self.queue_handler, daemon=True)
+        self.thread = threading.Thread(target=self.queue_handler)
         self.stop = threading.Event()
         self.throughputList = []
         print(self.hitIt(filename))
-        self.thread.start()
+        #self.thread.start()
         print("Init done")
 
 
@@ -36,7 +36,7 @@ class RunHandler:
             return "Error getting mpdPath in : request_mpd("+filename+")"
         
         tmp = self.init_Obj()
-        self.request_all_init_files(len(self.parsObj.get_qualities()))
+        self.request_all_init_files(self.parsObj.number_of_qualities())
 
         if not tmp[0]:
             return tmp
@@ -125,9 +125,16 @@ class RunHandler:
     #POST: path to next chunks(dir), Startindex, endindex, quality
     def parse_segment(self):
         q = 0
+        quality_dict = self.parsObj.get_qualities()
+
         if len(self.throughputList) > 0:
-            q = self.throughputList[-1]
-        segment = self.parsObj.get_next_segment(bandwidth=q)
+            for quality, b in quality_dict.items():
+                if self.throughputList[-1] < int(b):
+                    continue
+                q = quality
+                break
+
+        segment = self.parsObj.get_next_segment(q)
         print(f"Segment from parse_segment is {segment}")
 
         if(segment is not False):
@@ -147,7 +154,7 @@ class RunHandler:
         else:
             self.nextSegment = False
             self.killthread()
-
+        return self.nextSegment
         self.Qbuf.put(self.nextSegment)
 
 
@@ -162,7 +169,7 @@ class RunHandler:
     #POST: path to .mp4 file
     def decode_segments(self, path, si, ei, q):
         success,mp4Path = decode_segment(path, si, ei, q, self.title)#(bool, pathToMp4File)
-        if success :
+        if success:
             return mp4Path
             #continue with stuff
         else:
@@ -172,14 +179,13 @@ class RunHandler:
 
     #Used by the videoplayer to get next .mp4 path
     def get_next_segment(self):
-        print("getting next segment")
-        self.newSegment = self.Qbuf.get(timeout = 1)
+        #print("getting next segment")
+        return self.parse_segment()
+        self.newSegment = self.Qbuf.get(timeout=1)
         if not self.newSegment:
             print("get_next_segment ERROR: no newSegment")
-        if self.pause_cond.locked():
-            print("lock locked, releasing lock")
-            self.pause_cond.release()
-        print("self.newSegment = ", self.newSegment)
+        self.resume_thread()
+        #print("self.newSegment = ", self.newSegment)
         return self.newSegment
 
     #PRE:
@@ -191,7 +197,7 @@ class RunHandler:
                 while not self.Qbuf.full():
                     self.parse_segment()
                     #print("In queue handler")
-                self.pause_cond.acquire()
+                self.pause_thread()
 
         print("Queue handler exit")
 
@@ -211,7 +217,17 @@ class RunHandler:
         self.stop.set()
         if(self.pause_cond.locked()):
             self.pause_cond.release()
-            print("killing thread")
+            print("Killing thread")
+
+
+    def pause_thread(self, wait = 1):
+        if not self.pause_cond.locked():
+            self.pause_cond.acquire(timeout = wait)
+
+
+    def resume_thread(self):
+        if self.pause_cond.locked():
+            self.pause_cond.release()
 
 
 

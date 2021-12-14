@@ -1,4 +1,5 @@
 from mpegdash.parser import MPEGDASHParser
+import collections
 
 """
 
@@ -54,11 +55,19 @@ class MPDParser():
         return tot
 
 
+    def number_of_qualities(self):
+        tot = 0
+        for _ in self.mpd.periods[0].adaptation_sets:
+            tot += 1
+        return tot
+
+
     def get_qualities(self):
-        adaptations = []
+        adaptations = {}
         for adaptation in self.mpd.periods[0].adaptation_sets:
-            adaptations.append(adaptation.id)
-        return adaptations
+            if adaptation.content_type == "video":
+                adaptations[adaptation.id] = adaptation.representations[0].bandwidth
+        return collections.OrderedDict(adaptations.items())
 
 
     # Helper function

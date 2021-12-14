@@ -4,6 +4,7 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl
 from client.client_interface import request_movie_list, request_file
 from handler import RunHandler
+import threading
 import sys
 import os, shutil
 import time
@@ -21,10 +22,15 @@ class Window(QWidget):
         self.init_ui()
         self.show()
 
+        self.pause_cond = threading.Lock()
+        self.thread = threading.Thread(target=self.add_media)
+        self.stop = threading.Event()
+
     def init_ui(self):
         # Create media player object
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
-        self.mediaPlaylist = QMediaPlaylist()
+        self.mediaPlaylist = QMediaPlaylist(self.mediaPlayer)
+        self.mediaPlayer.setPlaylist(self.mediaPlaylist)
 
         # Create video widget object
         self.videoWidget = QVideoWidget()
@@ -77,6 +83,7 @@ class Window(QWidget):
         self.mediaPlayer.stateChanged.connect(self.state_changed)
         self.mediaPlayer.positionChanged.connect(self.position_changed)
         self.mediaPlayer.durationChanged.connect(self.duration_changed)
+        self.mediaPlaylist.currentIndexChanged.connect(self.index_changed)
 
     # When a movie have been "clicked"
     #def clicked (self, qmodelindex):
@@ -109,7 +116,8 @@ class Window(QWidget):
             #request_file(file_name)
             print(f'path = {path.split("/")[-1]}')
             self.benjamin_hanterar = RunHandler(path.split("/")[-1])
-            self.set_playlist()
+            self.thread.start()
+            #self.set_playlist()
             self.play_video()
 
             """
@@ -163,12 +171,19 @@ class Window(QWidget):
 
 
     def play_video(self):
-        playback = self.add_media()
+        #playback = self.add_media()
+        while self.mediaPlaylist.isEmpty():
+            continue
+
+        print("Starting playback")
+        print(f"Current media: {self.mediaPlayer.currentMedia()}")
+        self.mediaPlaylist.setCurrentIndex(0)
+        print(f"Current index: {self.mediaPlaylist.currentIndex()}")
         self.mediaPlayer.play()
 
-        while playback:
-            playback = self.add_media()
-            time.sleep(2)
+        #while playback:
+        #    playback = self.add_media()
+
 
         """
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
@@ -193,6 +208,10 @@ class Window(QWidget):
         self.slider.setRange(0, duration)
 
 
+    def index_changed(self):
+        self.resume_thread()
+
+
     def set_position(self, position):
         self.mediaPlayer.setPosition(position)
 
@@ -203,15 +222,45 @@ class Window(QWidget):
 
 
     def add_media(self):
+        
+        while not self.stop.is_set():
+            with self.pause_cond:
+                while self.mediaPlaylist.mediaCount() < 5:
+                    segment = self.benjamin_hanterar.get_next_segment()
+                    print(f"Playlist contains {self.mediaPlaylist.mediaCount()} items")
+                    if segment is not False:
+                        media_content = QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment))
+                        self.mediaPlaylist.addMedia(media_content)
+                    #print("In queue handler")
+                self.pause_thread()
+        
+        """
         segment = self.benjamin_hanterar.get_next_segment()
         if segment is not False:
             media_content = QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment))
             self.mediaPlaylist.addMedia(media_content)
             return True
         return False
+        """
 
 
+    def killthread(self):
+        self.stop.set()
+        if(self.pause_cond.locked()):
+            self.pause_cond.release()
+            print("Killing thread")
 
+
+    def pause_thread(self, wait = 1):
+        if not self.pause_cond.locked():
+            print("Pausing Thread")
+            self.pause_cond.acquire(timeout = wait)
+
+
+    def resume_thread(self):
+        if self.pause_cond.locked():
+            print("Resuming Thread")
+            self.pause_cond.release()
 
 
 if __name__ == "__main__":
