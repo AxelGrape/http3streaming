@@ -4,10 +4,10 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl
 from client.client_interface import request_movie_list, request_file
 from handler import RunHandler
-import threading
+#import threading
 import sys
 import os, shutil
-import time
+#import time
 from os.path import exists
 
 class Window(QWidget):
@@ -21,11 +21,6 @@ class Window(QWidget):
         self.benjamin_hanterar = None
         self.init_ui()
         self.show()
-
-        self.pause_cond = threading.Lock()
-        self.play_lock = threading.Lock()
-        self.thread = threading.Thread(target=self.add_media)
-        self.stop = threading.Event()
 
     def init_ui(self):
         # Create media player object
@@ -84,6 +79,9 @@ class Window(QWidget):
         self.mediaPlayer.stateChanged.connect(self.state_changed)
         self.mediaPlayer.positionChanged.connect(self.position_changed)
         self.mediaPlayer.durationChanged.connect(self.duration_changed)
+        self.mediaPlayer.mediaChanged.connect(self.clear_playlist)
+        
+        # Media playlist signals
         self.mediaPlaylist.currentIndexChanged.connect(self.index_changed)
 
     # When a movie have been "clicked"
@@ -118,13 +116,7 @@ class Window(QWidget):
             #print(f'path = {path.split("/")[-1]}')
 
             self.benjamin_hanterar = RunHandler(path.split("/")[-1])
-            #self.thread.start()
             self.open_file()
-
-            #self.play_video()
-            #time.sleep(3)
-            #self.set_playlist()
-            #self.play_video()
 
             """
             movie_active = True
@@ -176,19 +168,6 @@ class Window(QWidget):
     
 
     def play_video(self):
-        #playback = self.add_media()
-        #while self.mediaPlaylist.isEmpty():
-        #    continue
-
-        #print("Starting playback")
-        #print(f"Current media: {self.mediaPlayer.currentMedia()}")
-        #print(f"Current index: {self.mediaPlaylist.currentIndex()}")
-        #if self.mediaPlayer.mediaStatus == QMediaPlayer.LoadedMedia:
-        #self.mediaPlayer.play()
-
-        #while playback:
-        #    playback = self.add_media()
-        
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
             self.mediaPlayer.pause()
         else:
@@ -212,21 +191,7 @@ class Window(QWidget):
 
 
     def index_changed(self):
-        print(f"Files in playlist: {self.mediaPlaylist.mediaCount()}")
         self.add_media()
-        #indexPos = self.mediaPlaylist.currentIndex()
-        #if indexPos != -1:
-        #    print("HAR AR JAG INTE")
-        #    print(f"Inserted Media: {self.add_media(indexPos)} at index {indexPos}")
-        #else:
-            #print("========== indexPos = 1 ================")
-            #print(f"Inserted Media: {self.add_media(self.mediaPlaylist.currentIndex() + 1)} at index {self.mediaPlaylist.currentIndex() + 1}")
-            #self.mediaPlaylist.setCurrentIndex(0)
-            #self.add_media(self.mediaPlaylist.currentIndex() + 1)
-        
-        #print(f"IndexPos = {indexPos}")
-        #print(f"Items in playlist: {self.mediaPlaylist.mediaCount()}")
-        self.resume_thread()
 
 
     def set_position(self, position):
@@ -239,53 +204,18 @@ class Window(QWidget):
             if segment is not False:
                 media_content = QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment))
                 self.mediaPlaylist.addMedia(media_content)
-            #print("****** In fill_playlist() *****")
-            #print(f"Current Index: {self.mediaPlaylist.currentIndex()}")
+
+
+    def clear_playlist(self):
+        self.mediaPlayer.pause()
+        self.mediaPlaylist.clear()
 
 
     def add_media(self):
-        """
-        pos = 0
-        while not self.stop.is_set():
-            with self.pause_cond:
-                while self.mediaPlaylist.mediaCount() < 4:
-                    segment = self.benjamin_hanterar.get_next_segment()
-                    print(f"Playlist contains {self.mediaPlaylist.mediaCount()} items")
-                    if segment is not False:
-                        media_content = QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment))
-                        self.mediaPlaylist.insertMedia(pos, media_content)
-                        pos += 1
-                    else:
-                        break
-                    #print("In queue handler")
-                pos = 0
-                self.pause_thread()
-        """
-        
         segment = self.benjamin_hanterar.get_next_segment()
         if segment is not False:
             media_content = QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment))
             return self.mediaPlaylist.addMedia(media_content)
-        
-
-
-    def killthread(self):
-        self.stop.set()
-        if(self.pause_cond.locked()):
-            self.pause_cond.release()
-            print("Killing thread")
-
-
-    def pause_thread(self, wait = 1):
-        if not self.pause_cond.locked():
-            print("Pausing Thread")
-            self.pause_cond.acquire(timeout = wait)
-
-
-    def resume_thread(self):
-        if self.pause_cond.locked():
-            print("Resuming Thread")
-            self.pause_cond.release()
 
 
 if __name__ == "__main__":
