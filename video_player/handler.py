@@ -26,7 +26,7 @@ class RunHandler:
         self.stop = threading.Event()
         self.throughputList = []
         print(self.hitIt(filename))
-        #self.thread.start()
+        self.thread.start()
         print("Init done")
 
 
@@ -154,7 +154,7 @@ class RunHandler:
         else:
             self.nextSegment = False
             self.killthread()
-        return self.nextSegment
+        #return self.nextSegment
         self.Qbuf.put(self.nextSegment)
 
 
@@ -180,7 +180,7 @@ class RunHandler:
     #Used by the videoplayer to get next .mp4 path
     def get_next_segment(self):
         #print("getting next segment")
-        return self.parse_segment()
+        #return self.parse_segment()
         self.newSegment = self.Qbuf.get(timeout=1)
         if not self.newSegment:
             print("get_next_segment ERROR: no newSegment")
