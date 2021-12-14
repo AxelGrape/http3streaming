@@ -12,6 +12,7 @@ import time
 import math
 from pathlib import Path
 import logging
+from datetime import datetime
 
 class RunHandler:
 
@@ -25,6 +26,7 @@ class RunHandler:
         self.rebuffCount = 0
         self.quality_changes = 0
         self.latest_quality = 0
+        self.used_qualities = []
         self.pause_cond = threading.Lock()
         self.thread = threading.Thread(target=self.queue_handler, daemon=True)
         self.stop = threading.Event()
@@ -38,7 +40,7 @@ class RunHandler:
         self.mpdPath = self.request_mpd(filename)
         if not self.mpdPath: return "Error getting mpdPath in : request_mpd("+filename+")"
         tmp = self.init_Obj()
-        logging.basicConfig(filename="log/" + filename,
+        logging.basicConfig(filename="log/" + self.log_name_generator(filename),
                                     filemode='a',
                                     format='%(asctime)s,%(msecs)d %(levelname)s %(message)s',
                                     datefmt='%H:%M:%S',
@@ -60,6 +62,12 @@ class RunHandler:
                 movieList.append(line)
         return movieList
 
+    def log_name_generator(self, filename):
+        now = datetime.now()
+
+        print("now =", now)
+        dt_string = now.strftime("%d%m%Ytime%H:%M:%S")
+        return filename+dt_string
 
     #request mpd file from client
     #triggered from videoplayer
@@ -132,9 +140,7 @@ class RunHandler:
        s = round(size_bytes / p, 2)
        return "%s %s" % (s, size_name[i])
 
-    #PRE: parser object
-    #POST: path to next chunks(dir), Startindex, endindex, quality
-    def parse_segment(self):
+    def quality_calculator(self):
         q = 6
         quality_dictionary = self.parsObj.get_qualities()
 
@@ -150,13 +156,20 @@ class RunHandler:
                 q = max(quality_dictionary.keys())
         if q is not self.latest_quality:
             self.quality_changes += 1
-            logging.info(f'QUALITY_CHANGE {self.latest_quality:} -> {q}')
-            logger = logging.getLogger(f'urbanGUI')
+            if q in self.used_qualities:
+                logging.info(f'QUALITY_CHANGE {self.latest_quality:} -> {q}')
+                logger = logging.getLogger(f'urbanGUI')
+            else:
+                logging.info(f'QUALITY_CHANGE {self.latest_quality:} -> {q} (NEW QUALITY)')
+                logger = logging.getLogger(f'urbanGUI')
+                self.used_qualities.append(q)
         self.latest_quality = q
+        return q
 
-
-
-
+    #PRE: parser object
+    #POST: path to next chunks(dir), Startindex, endindex, quality
+    def parse_segment(self):
+        q = self.quality_calculator()
 
         segment = self.parsObj.get_next_segment(q)
         print("Segment from parse_segment is ", segment)
