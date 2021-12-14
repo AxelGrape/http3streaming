@@ -21,6 +21,9 @@ class RunHandler:
         self.Qbuf = None
         self.nextSegment = None
         self.newSegment = None
+        self.rebuffCount = 0
+        self.quality_changes = 0
+        self.latest_quality = 0
         self.pause_cond = threading.Lock()
         self.thread = threading.Thread(target=self.queue_handler, daemon=True)
         self.stop = threading.Event()
@@ -126,7 +129,25 @@ class RunHandler:
     #PRE: parser object
     #POST: path to next chunks(dir), Startindex, endindex, quality
     def parse_segment(self):
-        q = 0
+        q = 6
+        quality_dictionary = self.parsObj.get_qualities()
+
+
+        if(len(self.throughputList) > 0):
+            for quality, b in quality_dictionary.items():
+                quality_set = False
+                if int(self.throughputList[-1]) > int(b):
+                    quality_set = True
+                    q = quality
+                    break
+            if(quality_set is False):
+                q = max(quality_dictionary.keys())
+        if q is not self.latest_quality:
+            self.quality_changes += 1
+        print("Number of changes : ", self.quality_changes)
+
+
+
 
         segment = self.parsObj.get_next_segment(q)
         print("Segment from parse_segment is ", segment)

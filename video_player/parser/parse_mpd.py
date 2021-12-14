@@ -1,4 +1,5 @@
 from mpegdash.parser import MPEGDASHParser
+import collections
 
 """
 
@@ -38,6 +39,14 @@ class MPDParser():
             return (float(temp[0]) * 60) + float(temp[1])
         elif len(temp) == 3:
             return (float(temp[0]) * 60 * 60) + (float(temp[1]) * 60) + float(temp[2])
+
+    def get_qualities(self):
+            adaptations = {}
+            for adaptation in self.mpd.periods[0].adaptation_sets:
+                if adaptation.content_type == "video":
+                    adaptations[adaptation.id] = adaptation.representations[0].bandwidth
+            return collections.OrderedDict(sorted(adaptations.items()))
+
 
 
     # Return the total amounts of file chunks in the video
