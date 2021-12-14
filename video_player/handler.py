@@ -11,6 +11,7 @@ import subprocess
 import time
 import math
 from pathlib import Path
+import logging
 
 class RunHandler:
 
@@ -37,6 +38,11 @@ class RunHandler:
         self.mpdPath = self.request_mpd(filename)
         if not self.mpdPath: return "Error getting mpdPath in : request_mpd("+filename+")"
         tmp = self.init_Obj()
+        logging.basicConfig(filename="log/" + filename,
+                                    filemode='a',
+                                    format='%(asctime)s,%(msecs)d %(levelname)s %(message)s',
+                                    datefmt='%H:%M:%S',
+                                    level=logging.DEBUG)
         if not tmp[0]: return tmp
         #self.parse_segment()
         #if not self.nextSegment: return "Error getting first segment"
@@ -144,7 +150,10 @@ class RunHandler:
                 q = max(quality_dictionary.keys())
         if q is not self.latest_quality:
             self.quality_changes += 1
-        print("Number of changes : ", self.quality_changes)
+            logging.info(f'QUALITY_CHANGE {self.latest_quality:} -> {q}')
+            logger = logging.getLogger(f'urbanGUI')
+        self.latest_quality = q
+
 
 
 
@@ -162,8 +171,9 @@ class RunHandler:
             request_file(f'{self.title}/{segment[0]}', vidPath)
             t1_stop = perf_counter()
             request_file(f'{self.title}/{segment[1]}', vidPath)
-            #self.throughputList.append(self.convert_size((os.path.getsize(vidPath + segment[0]))/(t1_stop - t1_start)))
-            self.throughputList.append(os.path.getsize(vidPath + segment[0])/(t1_stop - t1_start))
+            self.throughputList.append(round(os.path.getsize(vidPath + segment[0])/(t1_stop - t1_start)))
+            logging.info(f'THROUGHPUT {self.throughputList[-1]} B/s')
+            logger = logging.getLogger(f'urbanGUI')
             self.nextSegment = self.decode_segments(vidPath, index, index, quality)
         else:
             self.nextSegment = False
