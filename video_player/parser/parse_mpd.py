@@ -44,10 +44,15 @@ class MPDParser():
             adaptations = {}
             for adaptation in self.mpd.periods[0].adaptation_sets:
                 if adaptation.content_type == "video":
-                    adaptations[adaptation.id] = adaptation.representations[0].bandwidth
+                    adaptations[adaptation.id] = adaptation.representations[0].bandwidth * 8
             return collections.OrderedDict(sorted(adaptations.items()))
 
 
+    def number_of_qualities(self):
+        tot = 0
+        for _ in self.mpd.periods[0].adaptation_sets:
+            tot += 1
+        return tot
 
     # Return the total amounts of file chunks in the video
     def amount_of_segments(self):
@@ -61,13 +66,6 @@ class MPDParser():
                 tot += dur.r
 
         return tot
-
-
-    def number_of_qualities(self):
-        adaptations = []
-        for adaptation in self.mpd.periods[0]:
-            adaptations.append(adaptation.id)
-        return adaptations
 
 
     # Helper function

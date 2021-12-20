@@ -4,6 +4,7 @@ from mpegdash.nodes import MPEGDASH
 from decoder.decoder_interface import decode_segment
 from client.client_interface import request_file, request_movie_list, custom_request
 from time import perf_counter
+from quality.quality_handler import student_entrypoint
 #from qbuffer import QBuffer
 import queue
 import threading
@@ -40,6 +41,7 @@ class RunHandler:
         self.mpdPath = self.request_mpd(filename)
         if not self.mpdPath: return "Error getting mpdPath in : request_mpd("+filename+")"
         tmp = self.init_Obj()
+        self.request_all_init_files(self.parsObj.number_of_qualities())
         logging.basicConfig(filename="log/" + self.log_name_generator(filename),
                                     filemode='a',
                                     format='%(asctime)s,%(msecs)d %(levelname)s %(message)s',
@@ -86,7 +88,6 @@ class RunHandler:
         print(f'{mpdPath_isfile}   file is   {mpdPath}')
         if(mpdPath_isfile):
             print("MPD path exists")
-            self.request_all_init_files(8)
             return mpdPath
         else:
             print("Bad filename")
@@ -140,9 +141,12 @@ class RunHandler:
        s = round(size_bytes / p, 2)
        return "%s %s" % (s, size_name[i])
 
+    #Measured_Bandwidth, Buffer_Occupancy, Available_Bitrates, Rebuffering_Time
     def quality_calculator(self):
         q = 6
         quality_dictionary = self.parsObj.get_qualities()
+        if(len(self.throughputList) > 0):
+            print("Habtes kod : ", student_entrypoint(self.throughputList[-1] * 8, self.queue_time(), quality_dictionary, 0))
 
 
         if(len(self.throughputList) > 0):
@@ -169,7 +173,22 @@ class RunHandler:
     #PRE: parser object
     #POST: path to next chunks(dir), Startindex, endindex, quality
     def parse_segment(self):
-        q = self.quality_calculator()
+        q = 6
+        if(len(self.throughputList) > 0):
+            q = student_entrypoint(self.throughputList[-1]* 8, self.queue_time(), self.parsObj.get_qualities(), self.rebuffCount)
+            self.rebuffCount = 0
+
+
+        if q is not self.latest_quality:
+            self.quality_changes += 1
+            if q in self.used_qualities:
+                logging.info(f'QUALITY_CHANGE {self.latest_quality:} -> {q}')
+                logger = logging.getLogger(f'urbanGUI')
+            else:
+                logging.info(f'QUALITY_CHANGE {self.latest_quality:} -> {q} (NEW QUALITY)')
+                logger = logging.getLogger(f'urbanGUI')
+                self.used_qualities.append(q)
+        self.latest_quality = q
 
         segment = self.parsObj.get_next_segment(q)
         #print("Segment from parse_segment is ", segment)
@@ -224,6 +243,10 @@ class RunHandler:
             print("lock locked, releasing lock")
             self.pause_cond.release()
         print("self.newSegment = ", self.newSegment)
+        if(len(self.Qbuf.queue) < 1):
+            self.rebuffCount +=1
+            logging.info(f'REBUFFERING {self.newSegment}')
+            logger = logging.getLogger(f'urbanGUI')
         return self.newSegment
 
     #PRE:
