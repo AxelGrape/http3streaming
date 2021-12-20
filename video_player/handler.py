@@ -172,7 +172,7 @@ class RunHandler:
         q = self.quality_calculator()
 
         segment = self.parsObj.get_next_segment(q)
-        print("Segment from parse_segment is ", segment)
+        #print("Segment from parse_segment is ", segment)
         if(segment is not False):
             vidPath = self.mpdPath.replace("dash.mpd", "")
             try:

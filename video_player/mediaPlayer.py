@@ -1,12 +1,13 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, QSlider, QStyle, QSizePolicy, QFileDialog, QListWidget, QGridLayout
-from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QMediaPlaylist
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl
 from client.client_interface import request_movie_list, request_file
 from handler import RunHandler
+#import threading
 import sys
 import os, shutil
-import time
+#import time
 from os.path import exists
 
 class Window(QWidget):
@@ -17,13 +18,16 @@ class Window(QWidget):
 
         self.setWindowTitle("Media Player")
         self.setGeometry(350, 100, 700, 500)
-
+        self.benjamin_hanterar = None
         self.init_ui()
         self.show()
 
     def init_ui(self):
         # Create media player object
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
+        self.mediaPlaylist = QMediaPlaylist(self.mediaPlayer)
+        self.mediaPlaylist.setPlaybackMode(3)
+        self.mediaPlayer.setPlaylist(self.mediaPlaylist)
 
         # Create video widget object
         self.videoWidget = QVideoWidget()
@@ -76,6 +80,10 @@ class Window(QWidget):
         self.mediaPlayer.stateChanged.connect(self.state_changed)
         self.mediaPlayer.positionChanged.connect(self.position_changed)
         self.mediaPlayer.durationChanged.connect(self.duration_changed)
+        self.mediaPlayer.mediaChanged.connect(self.clear_playlist)
+        
+        # Media playlist signals
+        self.mediaPlaylist.currentIndexChanged.connect(self.index_changed)
 
     # When a movie have been "clicked"
     #def clicked (self, qmodelindex):
@@ -103,15 +111,17 @@ class Window(QWidget):
         else:
             self.remove_folders()
             path = item.text()
-            print(path.split("/")[-1])
-            file_name = path.split("/")[-1] + "/" + path.split("/")[-1] + ".mp4"
+            #print(path.split("/")[-1])
+            #file_name = path.split("/")[-1] + "/" + path.split("/")[-1] + ".mp4"
             #request_file(file_name)
-            print(f'path = {path.split("/")[-1]}')
-            benjamin_hanterar = RunHandler(path.split("/")[-1])
+            #print(f'path = {path.split("/")[-1]}')
 
-
+            self.benjamin_hanterar = RunHandler(path.split("/")[-1])
+            self.check=False
+            self.open_file()
+            
+            """
             movie_active = True
-
             while(movie_active):
                 segment = benjamin_hanterar.get_next_segment()
                 if(segment is False):
@@ -123,34 +133,19 @@ class Window(QWidget):
                     self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment)))
                     self.mediaPlayer.play()
                     time.sleep(benjamin_hanterar.get_segment_length())
-
-            self.remove_folders()
-            print("filmen är färdiiiig")
+            """
+            #self.remove_folders()
+            #print("filmen är färdiiiig")
             #self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile()))
             #self.mediaPlayer.play()
 
-#
-            #benjamin_hanterar = RunHandler()
-            #self.playBtn.setEnabled(True)
-            #benjamin_hanterar.request_mpd(path.split("/")[-1])
-            #benjamin_hanterar.parse_mpd()
-            #benjamin_hanterar.parse_segment()
-            #self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile("/home/axel/Documents/School/HT2021/DVAE08/http3streaming/video_player/vid/nature/out/vid00001.mp4")))
-            #self.mediaPlayer.play()
-            #benjamin_hanterar.parse_segment()
-            #time.sleep(benjamin_hanterar.get_segment_length())
-            #self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile("/home/axel/Documents/School/HT2021/DVAE08/http3streaming/video_player/vid/nature/out/vid00002.mp4")))
-            #self.mediaPlayer.play()
-            #benjamin_hanterar.parse_segment()
-            #time.sleep(benjamin_hanterar.get_segment_length())
-            #self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile("/home/axel/Documents/School/HT2021/DVAE08/http3streaming/video_player/vid/nature/out/vid00003.mp4")))
-            #self.mediaPlayer.play()
 
     def update_list_widget(self):
         self.listwidget.clear()
         for i, movie in enumerate(self.full_movie_list):
             self.listwidget.insertItem(i, movie)
 
+    
     def refresh_movie_list(self):
         pathy = os.getcwd() + "/list_movies"
         request_movie_list(os.getcwd())
@@ -165,19 +160,22 @@ class Window(QWidget):
             self.update_list_widget()
             os.remove(pathy)
 
+    
     def open_file(self):
-        fileName, _ = QFileDialog.getOpenFileName(self, "Open Video")
-
-        if fileName != "":
-            self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(fileName)))
-            self.playBtn.setEnabled(True)
-
+        self.fill_playlist()
+        self.mediaPlayer.setMedia(QMediaContent(self.mediaPlaylist))
+        self.mediaPlaylist.setCurrentIndex(0)
+        self.playBtn.setEnabled(True)
+    
 
     def play_video(self):
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
             self.mediaPlayer.pause()
         else:
             self.mediaPlayer.play()
+            print("Starting with index: ", self.mediaPlaylist.currentIndex())
+        
+
 
     def state_changed(self):
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
@@ -185,6 +183,7 @@ class Window(QWidget):
         else:
             self.playBtn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
 
+    
     def position_changed(self, time):
         self.slider.setValue(time)
 
@@ -193,14 +192,70 @@ class Window(QWidget):
         self.slider.setRange(0, duration)
 
 
+    def index_changed(self):
+        print("PLAYBACK: ", self.mediaPlaylist.playbackMode())
+        
+        #print("MEDIACOUNT1: ", self.mediaPlaylist.mediaCount())
+        print(f'------Pre| prev:{self.mediaPlaylist.previousIndex()}, curr:{self.mediaPlaylist.currentIndex()}, next:{self.mediaPlaylist.nextIndex()}, count:{self.mediaPlaylist.mediaCount()}-----')
+        if self.mediaPlaylist.nextIndex() == 0:
+            #
+            #self.add_media()
+            self.check=True
+            print(f'PreINSERT@prev| prev:{self.mediaPlaylist.previousIndex()}, curr:{self.mediaPlaylist.currentIndex()}, next:{self.mediaPlaylist.nextIndex()}')
+            self.insert_media(self.mediaPlaylist.previousIndex())
+            print(f'PostINSERT@prev| prev:{self.mediaPlaylist.previousIndex()}, curr:{self.mediaPlaylist.currentIndex()}, next:{self.mediaPlaylist.nextIndex()}')
+            print("removed: ", self.mediaPlaylist.removeMedia(self.mediaPlaylist.currentIndex()))
+        elif self.check is True:
+            print(f'PreINSERT@next| prev:{self.mediaPlaylist.previousIndex()}, curr:{self.mediaPlaylist.currentIndex()}, next:{self.mediaPlaylist.nextIndex()}')
+            self.insert_media(self.mediaPlaylist.nextIndex())
+            print(f'PostINSERT@next| prev:{self.mediaPlaylist.previousIndex()}, curr:{self.mediaPlaylist.currentIndex()}, next:{self.mediaPlaylist.nextIndex()}')
+            print("removed: ", self.mediaPlaylist.removeMedia(self.mediaPlaylist.nextIndex()+1))
+        """
+        if self.mediaPlaylist.nextIndex()==0:
+            print("PREVINDEX: ", self.mediaPlaylist.previousIndex())
+            self.insert_media(self.mediaPlaylist.nextIndex())
+            self.mediaPlaylist.removeMedia(self.mediaPlaylist.mediaCount()-1)
+        elif self.mediaPlaylist.currentIndex() == -1: 
+            print("ADDING MEDIA, INDEX : ", self.mediaPlaylist.currentIndex())
+            self.add_media()
+        """
+        print(f'-----Post| prev:{self.mediaPlaylist.previousIndex()}, curr:{self.mediaPlaylist.currentIndex()}, next:{self.mediaPlaylist.nextIndex()}, count:{self.mediaPlaylist.mediaCount()}-----')
+
+        #print("NEXT INDEX2: ", self.mediaPlaylist.nextIndex())
+        #print("MEDIACOUNT2: ", self.mediaPlaylist.mediaCount())
+
+
     def set_position(self, position):
         self.mediaPlayer.setPosition(position)
 
 
+    def fill_playlist(self, slots = 2):
+        for _ in range(slots):
+            segment = self.benjamin_hanterar.get_next_segment()
+            if segment is not False:
+                media_content = QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment))
+                self.mediaPlaylist.addMedia(media_content)
 
+
+    def clear_playlist(self):
+        self.mediaPlayer.pause()
+        self.mediaPlaylist.clear()
+
+
+    def add_media(self):
+        segment = self.benjamin_hanterar.get_next_segment()
+        if segment is not False:
+            media_content = QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment))
+            return self.mediaPlaylist.addMedia(media_content)
+    def insert_media(self,pos):
+        segment = self.benjamin_hanterar.get_next_segment()
+        if segment is not False:
+            media_content = QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment))
+            return self.mediaPlaylist.insertMedia(pos, media_content)
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     player = Window()
+    player.remove_folders()
     sys.exit(app.exec_())
