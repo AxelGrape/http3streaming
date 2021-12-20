@@ -4,43 +4,18 @@
 #using Practical Eval Paper as a reference
 #Didn't include Abandon request rule used because it seemed overly
 #complicated to fit with our system
-
 import psutil
 import time
 
 
-def get_bandwidth():
-    # Get net in/out
-    net1_out = psutil.net_io_counters().bytes_sent
-    net1_in = psutil.net_io_counters().bytes_recv
-
-    time.sleep(1)
-
-    # Get new net in/out
-    net2_out = psutil.net_io_counters().bytes_sent
-    net2_in = psutil.net_io_counters().bytes_recv
-
-    # Compare and get current speed
-    if net1_in > net2_in:
-        current_in = 0
-    else:
-        current_in = net2_in - net1_in
-
-    if net1_out > net2_out:
-        current_out = 0
-    else:
-        current_out = net2_out - net1_out
-
-    network = {"traffic_in" : current_in, "traffic_out" : current_out}
-    return network
 
 bitrate = 0
-def student_entrypoint(Measured_Bandwidth, Previous_Throughput, Buffer_Occupancy, Available_Bitrates, Video_Time, Chunk, Rebuffering_Time, Preferred_Bitrate ):
+def student_entrypoint(Measured_Bandwidth, Buffer_Occupancy, Available_Bitrates, Rebuffering_Time):
     #student can do whatever they want from here going forward
     global bitrate
     R_i = list(Available_Bitrates.items())
     R_i.sort(key=lambda tup: tup[1] , reverse=True)
-    bitrate = DASH(buf_time = Buffer_Occupancy['time'], rebuffering = Rebuffering_Time ,est_bandwidth=Measured_Bandwidth, T_low=4, T_rich=20, R_i = R_i, previous_bitrate =bitrate)
+    bitrate = DASH(buf_time = Buffer_Occupancy, rebuffering = Rebuffering_Time ,est_bandwidth=Measured_Bandwidth, T_low=8, T_rich=40, R_i = R_i, previous_bitrate =bitrate)
     return bitrate
 
 #helper function, to find the corresponding size of bitrate
@@ -55,7 +30,7 @@ def index(value,list_of_list):
             return e
     return len(list_of_list)-1
 
-def DASH(buf_time, rebuffering ,est_bandwidth, R_i , previous_bitrate, T_low=4, T_rich=20):
+def DASH(buf_time, rebuffering ,est_bandwidth, R_i , previous_bitrate, T_low=8, T_rich=40):
     '''
     Input:
     T_low = 4: the threshold for deciding that the buffer length is low
@@ -71,15 +46,20 @@ def DASH(buf_time, rebuffering ,est_bandwidth, R_i , previous_bitrate, T_low=4, 
 
     #throughput rule:
 
+    #print("buf_time : ", buf_time, " rebuffing : ", rebuffering, " est_bandwidth ", est_bandwidth, " previous_bitrate ", previous_bitrate)
+    rate_next = 0
     m = len(R_i)
     if buf_time >= T_low*2:
         for k in range(0, m):
+            #print(est_bandwidth/8 >= R_i[k][1])
             if est_bandwidth/8 >= R_i[k][1]: #get reasonable value under bandwidth
                 rate_next = R_i[k][0]
-                break
+                return rate_next
+
 
     #insufficient buffer rule:
 
+    #print("T_low : ", T_low, "buf_time : ", buf_time, "T_low*2 : ", T_low*2)
     if rebuffering != 0: #if there's any rebuffering return lowest possible
         rate_next = R_i[m-1][0]
         return rate_next
@@ -105,7 +85,7 @@ def DASH(buf_time, rebuffering ,est_bandwidth, R_i , previous_bitrate, T_low=4, 
 #######################################
 
 def main():
-    print(get_bandwidth())
+    print("l")
 
 if __name__ == "__main__":
     main()
