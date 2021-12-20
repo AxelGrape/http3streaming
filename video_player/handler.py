@@ -141,39 +141,10 @@ class RunHandler:
        s = round(size_bytes / p, 2)
        return "%s %s" % (s, size_name[i])
 
-    #Measured_Bandwidth, Buffer_Occupancy, Available_Bitrates, Rebuffering_Time
-    def quality_calculator(self):
-        q = 6
-        quality_dictionary = self.parsObj.get_qualities()
-        if(len(self.throughputList) > 0):
-            print("Habtes kod : ", student_entrypoint(self.throughputList[-1] * 8, self.queue_time(), quality_dictionary, 0))
-
-
-        if(len(self.throughputList) > 0):
-            for quality, b in quality_dictionary.items():
-                quality_set = False
-                if int(self.throughputList[-1]) > int(b):
-                    quality_set = True
-                    q = quality
-                    break
-            if(quality_set is False):
-                q = max(quality_dictionary.keys())
-        if q is not self.latest_quality:
-            self.quality_changes += 1
-            if q in self.used_qualities:
-                logging.info(f'QUALITY_CHANGE {self.latest_quality:} -> {q}')
-                logger = logging.getLogger(f'urbanGUI')
-            else:
-                logging.info(f'QUALITY_CHANGE {self.latest_quality:} -> {q} (NEW QUALITY)')
-                logger = logging.getLogger(f'urbanGUI')
-                self.used_qualities.append(q)
-        self.latest_quality = q
-        return q
-
     #PRE: parser object
     #POST: path to next chunks(dir), Startindex, endindex, quality
     def parse_segment(self):
-        q = 6
+        q = 8
         if(len(self.throughputList) > 0):
             q = student_entrypoint(self.throughputList[-1]* 8, self.queue_time(), self.parsObj.get_qualities(), self.rebuffCount)
             self.rebuffCount = 0

@@ -117,28 +117,8 @@ class Window(QWidget):
             #print(f'path = {path.split("/")[-1]}')
 
             self.benjamin_hanterar = RunHandler(path.split("/")[-1])
-            self.check=False
+            self.check=0
             self.open_file()
-            
-            """
-            movie_active = True
-            while(movie_active):
-                segment = benjamin_hanterar.get_next_segment()
-                if(segment is False):
-                    movie_active = False
-                    benjamin_hanterar.print_throughput()
-                    break
-                else:
-                    #print("segment is ", segment)
-                    self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment)))
-                    self.mediaPlayer.play()
-                    time.sleep(benjamin_hanterar.get_segment_length())
-            """
-            #self.remove_folders()
-            #print("filmen är färdiiiig")
-            #self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile()))
-            #self.mediaPlayer.play()
-
 
     def update_list_widget(self):
         self.listwidget.clear()
@@ -193,32 +173,38 @@ class Window(QWidget):
 
 
     def index_changed(self):
+        print(self.mediaPlayer.mediaStatus())
+        print(self.mediaPlayer.error(), " | ", self.mediaPlayer.errorString())
         print("PLAYBACK: ", self.mediaPlaylist.playbackMode())
-        
+        if self.check == -1 :
+            self.mediaPlaylist.setPlaybackMode(2)
+            self.mediaPlaylist.clear()
+            self.mediaPlayer.stop()
+            print("SELFCHECK IS -1")
+            return
         #print("MEDIACOUNT1: ", self.mediaPlaylist.mediaCount())
         print(f'------Pre| prev:{self.mediaPlaylist.previousIndex()}, curr:{self.mediaPlaylist.currentIndex()}, next:{self.mediaPlaylist.nextIndex()}, count:{self.mediaPlaylist.mediaCount()}-----')
         if self.mediaPlaylist.nextIndex() == 0:
             #
             #self.add_media()
-            self.check=True
-            print(f'PreINSERT@prev| prev:{self.mediaPlaylist.previousIndex()}, curr:{self.mediaPlaylist.currentIndex()}, next:{self.mediaPlaylist.nextIndex()}')
-            self.insert_media(self.mediaPlaylist.previousIndex())
-            print(f'PostINSERT@prev| prev:{self.mediaPlaylist.previousIndex()}, curr:{self.mediaPlaylist.currentIndex()}, next:{self.mediaPlaylist.nextIndex()}')
-            print("removed: ", self.mediaPlaylist.removeMedia(self.mediaPlaylist.currentIndex()))
-        elif self.check is True:
-            print(f'PreINSERT@next| prev:{self.mediaPlaylist.previousIndex()}, curr:{self.mediaPlaylist.currentIndex()}, next:{self.mediaPlaylist.nextIndex()}')
-            self.insert_media(self.mediaPlaylist.nextIndex())
-            print(f'PostINSERT@next| prev:{self.mediaPlaylist.previousIndex()}, curr:{self.mediaPlaylist.currentIndex()}, next:{self.mediaPlaylist.nextIndex()}')
-            print("removed: ", self.mediaPlaylist.removeMedia(self.mediaPlaylist.nextIndex()+1))
-        """
-        if self.mediaPlaylist.nextIndex()==0:
-            print("PREVINDEX: ", self.mediaPlaylist.previousIndex())
-            self.insert_media(self.mediaPlaylist.nextIndex())
-            self.mediaPlaylist.removeMedia(self.mediaPlaylist.mediaCount()-1)
-        elif self.mediaPlaylist.currentIndex() == -1: 
-            print("ADDING MEDIA, INDEX : ", self.mediaPlaylist.currentIndex())
-            self.add_media()
-        """
+            if self.check==0:
+                self.check = 1
+            #print(f'PreINSERT@prev| prev:{self.mediaPlaylist.previousIndex()}, curr:{self.mediaPlaylist.currentIndex()}, next:{self.mediaPlaylist.nextIndex()}')
+            if self.insert_media(self.mediaPlaylist.previousIndex()) is False:
+                self.check = -1
+                print("GOT FALSE")
+            else:
+            #    print(f'PostINSERT@prev| prev:{self.mediaPlaylist.previousIndex()}, curr:{self.mediaPlaylist.currentIndex()}, next:{self.mediaPlaylist.nextIndex()}')
+                print("removed: ", self.mediaPlaylist.removeMedia(self.mediaPlaylist.currentIndex()))
+        elif self.check == 1:
+            #print(f'PreINSERT@next| prev:{self.mediaPlaylist.previousIndex()}, curr:{self.mediaPlaylist.currentIndex()}, next:{self.mediaPlaylist.nextIndex()}')
+            if self.insert_media(self.mediaPlaylist.nextIndex()) is False:
+                self.check = -1
+                print("GOT FALSE")
+            else:
+            #    print(f'PostINSERT@next| prev:{self.mediaPlaylist.previousIndex()}, curr:{self.mediaPlaylist.currentIndex()}, next:{self.mediaPlaylist.nextIndex()}')
+                print("removed: ", self.mediaPlaylist.removeMedia(self.mediaPlaylist.nextIndex()+1))
+
         print(f'-----Post| prev:{self.mediaPlaylist.previousIndex()}, curr:{self.mediaPlaylist.currentIndex()}, next:{self.mediaPlaylist.nextIndex()}, count:{self.mediaPlaylist.mediaCount()}-----')
 
         #print("NEXT INDEX2: ", self.mediaPlaylist.nextIndex())
@@ -247,11 +233,13 @@ class Window(QWidget):
         if segment is not False:
             media_content = QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment))
             return self.mediaPlaylist.addMedia(media_content)
+        else: return segment
     def insert_media(self,pos):
         segment = self.benjamin_hanterar.get_next_segment()
         if segment is not False:
             media_content = QMediaContent(QUrl.fromLocalFile(os.getcwd() + "/" + segment))
             return self.mediaPlaylist.insertMedia(pos, media_content)
+        else: return segment
 
 
 if __name__ == "__main__":
