@@ -1,0 +1,36 @@
+02:22:02,445 INFO QUALITY_CHANGE 0 -> 8 (NEW QUALITY)
+02:22:02,937 INFO THROUGHPUT 445463 B/s
+02:22:02,937 INFO SEGMENTS IN BUFFER deque([]) B/s
+02:22:03,56 INFO QUALITY_CHANGE 8 -> 0 (NEW QUALITY)
+02:22:03,58 INFO REBUFFERING vid/Risingsun/out/vid00001.mp4
+02:22:03,560 INFO THROUGHPUT 418612 B/s
+02:22:03,560 INFO SEGMENTS IN BUFFER deque([]) B/s
+02:22:03,682 INFO QUALITY_CHANGE 0 -> 8
+02:22:03,682 INFO REBUFFERING vid/Risingsun/out/vid00002.mp4
+02:22:04,237 INFO THROUGHPUT 620149 B/s
+02:22:04,237 INFO SEGMENTS IN BUFFER deque([]) B/s
+02:22:04,946 INFO THROUGHPUT 599803 B/s
+02:22:04,946 INFO SEGMENTS IN BUFFER deque(['vid/Risingsun/out/vid00003.mp4']) B/s
+02:22:05,509 INFO THROUGHPUT 581991 B/s
+02:22:05,509 INFO SEGMENTS IN BUFFER deque(['vid/Risingsun/out/vid00003.mp4', 'vid/Risingsun/out/vid00004.mp4']) B/s
+02:22:05,662 INFO QUALITY_CHANGE 8 -> 0
+02:22:06,509 INFO THROUGHPUT 607793 B/s
+02:22:06,509 INFO SEGMENTS IN BUFFER deque(['vid/Risingsun/out/vid00003.mp4', 'vid/Risingsun/out/vid00004.mp4', 'vid/Risingsun/out/vid00005.mp4']) B/s
+02:22:07,421 INFO THROUGHPUT 586774 B/s
+02:22:07,421 INFO SEGMENTS IN BUFFER deque(['vid/Risingsun/out/vid00003.mp4', 'vid/Risingsun/out/vid00004.mp4', 'vid/Risingsun/out/vid00005.mp4', 'vid/Risingsun/out/vid00006.mp4']) B/s
+02:22:08,573 INFO THROUGHPUT 658763 B/s
+02:22:08,574 INFO SEGMENTS IN BUFFER deque(['vid/Risingsun/out/vid00003.mp4', 'vid/Risingsun/out/vid00004.mp4', 'vid/Risingsun/out/vid00005.mp4', 'vid/Risingsun/out/vid00006.mp4', 'vid/Risingsun/out/vid00007.mp4']) B/s
+02:22:09,583 INFO THROUGHPUT 677674 B/s
+02:22:09,583 INFO SEGMENTS IN BUFFER deque(['vid/Risingsun/out/vid00003.mp4', 'vid/Risingsun/out/vid00004.mp4', 'vid/Risingsun/out/vid00005.mp4', 'vid/Risingsun/out/vid00006.mp4', 'vid/Risingsun/out/vid00007.mp4', 'vid/Risingsun/out/vid00008.mp4']) B/s
+02:22:11,86 INFO THROUGHPUT 607898 B/s
+02:22:11,86 INFO SEGMENTS IN BUFFER deque(['vid/Risingsun/out/vid00003.mp4', 'vid/Risingsun/out/vid00004.mp4', 'vid/Risingsun/out/vid00005.mp4', 'vid/Risingsun/out/vid00006.mp4', 'vid/Risingsun/out/vid00007.mp4', 'vid/Risingsun/out/vid00008.mp4', 'vid/Risingsun/out/vid00009.mp4']) B/s
+02:22:12,420 INFO THROUGHPUT 623160 B/s
+02:22:12,420 INFO SEGMENTS IN BUFFER deque(['vid/Risingsun/out/vid00004.mp4', 'vid/Risingsun/out/vid00005.mp4', 'vid/Risingsun/out/vid00006.mp4', 'vid/Risingsun/out/vid00007.mp4', 'vid/Risingsun/out/vid00008.mp4', 'vid/Risingsun/out/vid00009.mp4', 'vid/Risingsun/out/vid00010.mp4']) B/s
+02:22:13,504 INFO THROUGHPUT 656108 B/s
+02:22:13,504 INFO SEGMENTS IN BUFFER deque(['vid/Risingsun/out/vid00004.mp4', 'vid/Risingsun/out/vid00005.mp4', 'vid/Risingsun/out/vid00006.mp4', 'vid/Risingsun/out/vid00007.mp4', 'vid/Risingsun/out/vid00008.mp4', 'vid/Risingsun/out/vid00009.mp4', 'vid/Risingsun/out/vid00010.mp4', 'vid/Risingsun/out/vid00011.mp4']) B/s
+02:22:15,10 INFO THROUGHPUT 617605 B/s
+02:22:15,11 INFO SEGMENTS IN BUFFER deque(['vid/Risingsun/out/vid00004.mp4', 'vid/Risingsun/out/vid00005.mp4', 'vid/Risingsun/out/vid00006.mp4', 'vid/Risingsun/out/vid00007.mp4', 'vid/Risingsun/out/vid00008.mp4', 'vid/Risingsun/out/vid00009.mp4', 'vid/Risingsun/out/vid00010.mp4', 'vid/Risingsun/out/vid00011.mp4', 'vid/Risingsun/out/vid00012.mp4']) B/s
+02:22:19,165 INFO THROUGHPUT 593949 B/s
+02:22:19,165 INFO SEGMENTS IN BUFFER deque(['vid/Risingsun/out/vid00005.mp4', 'vid/Risingsun/out/vid00006.mp4', 'vid/Risingsun/out/vid00007.mp4', 'vid/Risingsun/out/vid00008.mp4', 'vid/Risingsun/out/vid00009.mp4', 'vid/Risingsun/out/vid00010.mp4', 'vid/Risingsun/out/vid00011.mp4', 'vid/Risingsun/out/vid00012.mp4', 'vid/Risingsun/out/vid00013.mp4']) B/s
+02:22:30,349 INFO THROUGHPUT 438103 B/s
+02:22:30,349 INFO SEGMENTS IN BUFFER deque(['vid/Risingsun/out/vid00006.mp4', 'vid/Risingsun/out/vid00007.mp4', 'vid/Risingsun/out/vid00008.mp4', 'vid/Risingsun/out/vid00009.mp4', 'vid/Risingsun/out/vid00010.mp4', 'vid/Risingsun/out/vid00011.mp4', 'vid/Risingsun/out/vid00012.mp4', 'vid/Risingsun/out/vid00013.mp4', 'vid/Risingsun/out/vid00014.mp4']) B/s

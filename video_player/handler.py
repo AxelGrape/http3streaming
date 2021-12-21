@@ -2,7 +2,7 @@ import os
 from parser.parse_mpd import MPDParser
 from mpegdash.nodes import MPEGDASH
 from decoder.decoder_interface import decode_segment
-from client.client_interface import request_file, request_movie_list, custom_request
+from client.client_interface import request_file, request_movie_list
 from time import perf_counter
 from quality.quality_handler import student_entrypoint
 #from qbuffer import QBuffer
@@ -17,11 +17,15 @@ from datetime import datetime
 
 class RunHandler:
 
+################################
+#Init functions                #
+################################
 
-    def __init__(self, filename):
+    def __init__(self, filename, host_ip):
         self.filename = filename
         self.mpdPath = None
         self.Qbuf = None
+        self.host_ip = host_ip
         self.nextSegment = None
         self.newSegment = None
         self.rebuffCount = 0
@@ -48,28 +52,9 @@ class RunHandler:
                                     datefmt='%H:%M:%S',
                                     level=logging.DEBUG)
         if not tmp[0]: return tmp
-        #self.parse_segment()
-        #if not self.nextSegment: return "Error getting first segment"
+
         print("hitit done")
 
-    #Extracts movie list content from file into a list
-    #PRE: server is online
-    #POST: returns a list with all available movie names
-    def get_movie_list():
-        movieList = []
-        movieListFile = request_movie_list()
-        with open(movieListFile) as file:
-            while(line := file.readline().rstrip()):
-                print(line)
-                movieList.append(line)
-        return movieList
-
-    def log_name_generator(self, filename):
-        now = datetime.now()
-
-        print("now =", now)
-        dt_string = now.strftime("%d%m%Ytime%H:%M:%S")
-        return filename+dt_string
 
     #request mpd file from client
     #triggered from videoplayer
@@ -82,7 +67,7 @@ class RunHandler:
         dir_path = f'{os.getcwd()}/vid/{filename}'
         os.mkdir(dir_path)
 
-        request_file(dash_path, dir_path)
+        request_file(dash_path, dir_path, self.host_ip)
         mpdPath = f'{dir_path}/dash.mpd'
         mpdPath_isfile = os.path.isfile(mpdPath)
         print(f'{mpdPath_isfile}   file is   {mpdPath}')
@@ -92,8 +77,7 @@ class RunHandler:
         else:
             print("Bad filename")
             return False
-            #return False + 'Problem with downloading mpd' #prata med aksel och sitri
-
+            #return False + 'Problem with downloading mpd'
 
     def request_all_init_files(self, quality_count):
         directory_name = self.title
@@ -101,12 +85,11 @@ class RunHandler:
         file_ending = ".m4s"
 
         for index in range(quality_count):
-            request_file(f'{directory_name}/{init_base_name}{index}{file_ending}', f'{os.getcwd()}/vid/{directory_name}')
+            request_file(f'{directory_name}/{init_base_name}{index}{file_ending}', f'{os.getcwd()}/vid/{directory_name}', self.host_ip)
 
     #PRE: Path to downloaded .mpd file
     #POST: parser object
     def init_Obj(self):
-        #self.mpdPath = ''
         try:
             self.parsObj = MPDParser(self.mpdPath)
             size = int(self.parsObj.get_min_buffer_time()/2)
@@ -119,64 +102,69 @@ class RunHandler:
             print(type(self.Qbuf), type(self.parsObj), "Failed to get QBuffer object")
             return False, "Failed to get QBuffer object"
 
+################################
+#Log                           #
+################################
+
+    def log_name_generator(self, filename):
+        now = datetime.now()
+        dt_string = now.strftime("%d_%m_%Y_%H:%M:%S")
+        return filename+"_"+dt_string
+
+    def log_message(self, msg):
+        logging.info(msg)
+        logger = logging.getLogger(f'urbanGUI')
+
+
+################################
+#Segment functions             #
+################################
 
     def get_segment_length(self):
         return self.parsObj.get_segment_duration(self.newSegment)
 
-        """
-        result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
-                                "format=duration", "-of",
-                                "default=noprint_wrappers=1:nokey=1", self.newSegment],
-            stdout = subprocess.PIPE,
-            stderr = subprocess.STDOUT)
-        return float(result.stdout)
-        """
-
-    def convert_size(self, size_bytes):
-       if size_bytes == 0:
-           return "0B"
-       size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-       i = int(math.floor(math.log(size_bytes, 1024)))
-       p = math.pow(1024, i)
-       s = round(size_bytes / p, 2)
-       return "%s %s" % (s, size_name[i])
-
-    #PRE: parser object
-    #POST: path to next chunks(dir), Startindex, endindex, quality
-    def parse_segment(self):
+    def quality_handler(self):
         q = 8
+
         if(len(self.throughputList) > 0):
             q = student_entrypoint(self.throughputList[-1]* 8, self.queue_time(), self.parsObj.get_qualities(), self.rebuffCount)
             self.rebuffCount = 0
 
-
         if q is not self.latest_quality:
+            msg = ""
             self.quality_changes += 1
             if q in self.used_qualities:
-                logging.info(f'QUALITY_CHANGE {self.latest_quality:} -> {q}')
-                logger = logging.getLogger(f'urbanGUI')
+                msg = f'QUALITY_CHANGE {self.latest_quality:} -> {q}'
             else:
-                logging.info(f'QUALITY_CHANGE {self.latest_quality:} -> {q} (NEW QUALITY)')
-                logger = logging.getLogger(f'urbanGUI')
+                msg = f'QUALITY_CHANGE {self.latest_quality:} -> {q} (NEW QUALITY)'
                 self.used_qualities.append(q)
+            self.log_message(msg)
         self.latest_quality = q
 
-        segment = self.parsObj.get_next_segment(q)
-        #print("Segment from parse_segment is ", segment)
+        return q
+
+    def parse_segment(self):
+        self.quality_handler()
+
+        segment = self.parsObj.get_next_segment(self.latest_quality)
         if(segment is not False):
             vidPath = self.mpdPath.replace("dash.mpd", "")
             try:
                 index = segment[0][-9:-4]
                 quality = segment[0][-11:-10]
             except:
-                print("wops")
+                print("Failed to get index and quality")
+
             t1_start = perf_counter()
-            request_file(f'{self.title}/{segment[0]}', vidPath)
+            request_file(f'{self.title}/{segment[0]}', vidPath, self.host_ip)
             t1_stop = perf_counter()
-            request_file(f'{self.title}/{segment[1]}', vidPath)
-            self.throughputList.append(round(os.path.getsize(vidPath + segment[0])/(t1_stop - t1_start)))
-            logging.info(f'THROUGHPUT {self.throughputList[-1]} B/s')
-            logger = logging.getLogger(f'urbanGUI')
+            request_file(f'{self.title}/{segment[1]}', vidPath, self.host_ip)
+
+            calculated_throughput = round(os.path.getsize(vidPath + segment[0])/(t1_stop - t1_start))
+            self.throughputList.append(calculated_throughput)
+            self.log_message(f'THROUGHPUT {self.throughputList[-1]} B/s')
+            self.log_message(f'SEGMENTS IN BUFFER {len(self.Qbuf.queue)}')
+
             self.nextSegment = self.decode_segments(vidPath, index, index, quality)
         else:
             self.nextSegment = False
@@ -184,41 +172,32 @@ class RunHandler:
 
         self.Qbuf.put(self.nextSegment)
 
-
-    def print_throughput(self):
-        print("All throughputs :")
-        for t in self.throughputList:
-            print(self.convert_size(t))
-        print("Latest throughput: ", self.throughputList[-1])
-
-
     #PRE: path to next chunks(dir), Index of start and end chunk, quality
     #POST: path to .mp4 file
     def decode_segments(self, path, si, ei, q):
         success,mp4Path = decode_segment(path, si, ei, q, self.title)#(bool, pathToMp4File)
-        if success :
-            return mp4Path
-            #continue with stuff
-        else:
-            return False, mp4Path
-            #handle fault stuff
+        return mp4Path if success else [False, mp4Path]
 
 
     #Used by the videoplayer to get next .mp4 path
     def get_next_segment(self):
-        print("getting next segment")
         self.newSegment = self.Qbuf.get()
         if not self.newSegment:
             print("get_next_segment ERROR: no newSegment")
+
         if self.pause_cond.locked():
-            print("lock locked, releasing lock")
+            #print("lock locked, releasing lock")
             self.pause_cond.release()
         print("self.newSegment = ", self.newSegment)
+
         if(len(self.Qbuf.queue) < 1):
             self.rebuffCount +=1
-            logging.info(f'REBUFFERING {self.newSegment}')
-            logger = logging.getLogger(f'urbanGUI')
+            self.log_message(f'REBUFFERING {self.newSegment}')
         return self.newSegment
+
+################################
+#Queue functions               #
+################################
 
     #PRE:
     #POST:
@@ -228,10 +207,8 @@ class RunHandler:
             with self.pause_cond:
                 while not self.Qbuf.full():
                     self.parse_segment()
-                    #print("In queue handler")
                 self.pause_cond.acquire()
 
-        print("Queue handler exit")
 
 
     # Return the total time currently in the queue
@@ -252,21 +229,12 @@ class RunHandler:
             print("killing thread")
 
 
-
+################################
+#Main                          #
+################################
 
 def main():
     Handler = RunHandler('nature')
-    #print("hej")
-    #p = MPDParser('/home/benjamin/Desktop/DVAE08/http3streaming/video_player/vid/nature/dash.mpd')
-    #a = p.get_next_segment(0)
-    #print(a)
-    #print(p.get_segment_duration(a[0]))
-    #Handler.request_mpd("nature")
-    #Handler.parse_mpd()
-    #Handler.parse_segment()
-    #Handler.parse_segment()
-    #print(Handler.get_segment_length())
-    #Handler.parse_segment()
 
 if __name__ == "__main__":
     main()
