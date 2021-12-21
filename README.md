@@ -6,7 +6,8 @@ Will update the server specific parts more later.
 
 ### Install proxygen and move the client to the media player
 ```
-proxygen/proxygen/build.sh --with-quic
+cd proxygen/proxygen/
+./build.sh --with-quic
 cp proxygen/proxygen/_build/proxygen/httpserver/samples/team video_player/
 ```
 
