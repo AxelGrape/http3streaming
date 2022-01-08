@@ -36,7 +36,8 @@ TODO
 ### Client-side
 
 ```
-python3.8.10 video_player/mediaPlayer.py
+cd video_player
+python3 mediaPlayer.py
 ```
 
 ### Server-side
