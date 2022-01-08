@@ -8,7 +8,7 @@ Will update the server specific parts more later.
 ```
 cd proxygen/proxygen/
 ./build.sh --with-quic
-cp proxygen/proxygen/_build/proxygen/httpserver/samples/team video_player/
+cp proxygen/proxygen/_build/proxygen/httpserver/team video_player/
 ```
 
 ### Install needed ubuntu libraries
