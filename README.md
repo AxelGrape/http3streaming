@@ -21,8 +21,8 @@ sudo apt-get install ubuntu-restricted-extras
 ### Install python 3.8.10 and needed libraries
 Other version of python might work but has yet to be tested.
 ```
-sudo apt-get install python3.8.10
-python3.8.10 get-pip.py
+sudo apt-get install python3.8
+sudo apt install python3-pip
 pip install mpegdash
 pip install PyQt5
 ```
