@@ -11,6 +11,12 @@ cd proxygen/proxygen/
 cp proxygen/proxygen/_build/proxygen/httpserver/team video_player/
 ```
 
+If the proxygen build fails (e.g. team does not exist after build), you can test the following:
+```
+cd proxygen/
+./getdeps.sh
+```
+
 ### Install needed ubuntu libraries
 ```
 sudo apt install ffmpeg
@@ -26,11 +32,6 @@ sudo apt install python3-pip
 pip install mpegdash
 pip install PyQt5
 ```
-
-
-## Server side
-TODO
-
 # Run
 
 ### Client-side
