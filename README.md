@@ -16,6 +16,7 @@ If the proxygen build fails (e.g. team does not exist after build), you can test
 cd proxygen/
 ./getdeps.sh
 ```
+Try building proxygen again running getdeps.
 
 ### Install needed ubuntu libraries
 ```
