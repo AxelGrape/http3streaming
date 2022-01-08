@@ -477,12 +477,13 @@ class MovieListHandler : public BaseSampleHandler {
 
     //path to movie folders
     std::string toupdate ="test";
-    std::string path = "/home/http3team/movies/";
+    std::string path = params_.staticRoot;
     std::string movie_list;
     for (const auto & entry : std::filesystem::directory_iterator(path)) {
       movie_list.append(entry.path());
       movie_list.append("\n");
     }
+
 
 
     txn_->sendHeaders(resp);
