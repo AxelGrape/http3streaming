@@ -39,7 +39,7 @@ pip install PyQt5
 
 ```
 cd video_player
-python3 mediaPlayer.py --host=130.243.27.204 (In our case)
+python3 mediaPlayer.py -host=130.243.27.204 (In our case)
 ```
 
 ### Server-side
